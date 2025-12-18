@@ -3,328 +3,724 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Snake — Mini Jeu</title>
+  <title>Snake — Deluxe</title>
   <style>
     :root { color-scheme: dark; }
-    body {
-      margin: 0; min-height: 100vh; display: grid; place-items: center;
+    * { box-sizing: border-box; }
+    body{
+      margin:0; min-height:100vh; display:grid; place-items:center;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      background: #0b0f16; color: #e9eef7;
+      background: radial-gradient(1200px 700px at 30% 20%, rgba(72,94,255,0.18), transparent 55%),
+                  radial-gradient(1200px 700px at 70% 80%, rgba(0,255,174,0.10), transparent 55%),
+                  #070b12;
+      color:#e9eef7;
     }
-    .wrap { width: min(520px, 92vw); }
-    .top {
-      display:flex; gap:12px; align-items:center; justify-content:space-between;
-      margin-bottom: 10px;
+    .wrap{ width:min(720px, 94vw); }
+    .top{
+      display:flex; flex-wrap:wrap; gap:12px;
+      align-items:center; justify-content:space-between;
+      margin-bottom:12px;
     }
-    .card {
+    .card{
       background: rgba(255,255,255,0.06);
       border: 1px solid rgba(255,255,255,0.10);
-      border-radius: 16px;
+      border-radius: 18px;
       padding: 14px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+      box-shadow: 0 18px 40px rgba(0,0,0,0.35);
+      backdrop-filter: blur(10px);
     }
-    canvas { width: 100%; height: auto; display:block; border-radius: 12px; }
-    .hud { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
-    .pill {
+    .hud{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+    .pill{
       padding: 6px 10px; border-radius: 999px;
       background: rgba(255,255,255,0.07);
-      border: 1px solid rgba(255,255,255,0.10);
+      border: 1px solid rgba(255,255,255,0.12);
       font-size: 14px;
+      display:flex; gap:6px; align-items:center;
     }
-    button {
+    .pill b{ font-variant-numeric: tabular-nums; }
+    button{
       cursor:pointer; border: 0; border-radius: 12px; padding: 10px 12px;
-      background: #2b6cff; color: white; font-weight: 700;
+      background: #2b6cff; color: white; font-weight: 800;
     }
-    button.secondary { background: rgba(255,255,255,0.10); }
-    .hint { opacity: .85; font-size: 13px; margin-top: 10px; line-height: 1.35; }
-    .hint kbd {
+    button.secondary{ background: rgba(255,255,255,0.10); }
+    button:active{ transform: translateY(1px); }
+    .grid{
+      display:grid;
+      grid-template-columns: 1.7fr 1fr;
+      gap: 12px;
+      align-items: start;
+    }
+    @media (max-width: 720px){
+      .grid{ grid-template-columns: 1fr; }
+    }
+    .canvas-wrap{ position:relative; }
+    canvas{
+      width:100%; height:auto;
+      display:block;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: #0c1120;
+    }
+    .hint{
+      opacity:.85; font-size: 13px; margin-top:10px; line-height:1.45;
+    }
+    .hint kbd{
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
       font-size: 12px;
       padding: 2px 6px; border-radius: 6px;
       background: rgba(255,255,255,0.08);
       border: 1px solid rgba(255,255,255,0.12);
     }
+    .opts .row{ display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
+    label{
+      display:flex; align-items:center; gap:8px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+      font-size: 13px;
+      user-select:none;
+    }
+    input[type="range"]{ width: 170px; }
+    select{
+      background: rgba(255,255,255,0.10);
+      border: 1px solid rgba(255,255,255,0.14);
+      color:#e9eef7;
+      border-radius: 10px;
+      padding: 8px 10px;
+    }
+    .small{ opacity:.9; font-size:12px; margin-top: 10px; line-height:1.35; }
+    .mono{ font-variant-numeric: tabular-nums; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="top">
       <div class="hud">
-        <div class="pill">Score : <span id="score">0</span></div>
-        <div class="pill">Record : <span id="best">0</span></div>
-        <div class="pill">Vitesse : <span id="speed">1.0</span>x</div>
+        <div class="pill">Score: <b id="score" class="mono">0</b></div>
+        <div class="pill">Record: <b id="best" class="mono">0</b></div>
+        <div class="pill">Vitesse: <b id="speed" class="mono">1.0</b>x</div>
+        <div class="pill">Taille: <b id="len" class="mono">3</b></div>
       </div>
       <div class="hud">
-        <button id="startBtn">▶ Jouer</button>
+        <button id="playBtn">▶ Jouer</button>
         <button id="pauseBtn" class="secondary">⏸ Pause</button>
         <button id="resetBtn" class="secondary">↻ Reset</button>
       </div>
     </div>
 
-    <div class="card">
-      <canvas id="game" width="480" height="480"></canvas>
-      <div class="hint">
-        Contrôles : <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> ou <kbd>ZQSD</kbd> •
-        Pause : <kbd>Espace</kbd> • Restart : <kbd>R</kbd><br/>
-        Sur mobile : glisse ton doigt dans une direction.
+    <div class="grid">
+      <div class="card canvas-wrap">
+        <canvas id="game" width="800" height="800"></canvas>
+        <div class="hint">
+          Contrôles : <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> ou <kbd>ZQSD</kbd> •
+          Pause : <kbd>Espace</kbd> • Restart : <kbd>R</kbd> • Jouer : <kbd>Entrée</kbd><br/>
+          Mobile : glisse dans une direction.
+        </div>
+      </div>
+
+      <div class="card opts">
+        <div style="font-weight:900; font-size:14px; opacity:.95;">Options</div>
+
+        <div class="row">
+          <label>
+            Difficulté
+            <select id="difficulty">
+              <option value="easy">Easy</option>
+              <option value="normal" selected>Normal</option>
+              <option value="hard">Hard</option>
+              <option value="insane">Insane</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="row">
+          <label>
+            Taille grille
+            <input id="gridSize" type="range" min="14" max="34" value="24" />
+            <span id="gridVal" class="mono">24</span>
+          </label>
+        </div>
+
+        <div class="row">
+          <label><input id="wrapWalls" type="checkbox" /> Wrap (téléport aux bords)</label>
+          <label><input id="obstacles" type="checkbox" /> Obstacles</label>
+        </div>
+
+        <div class="row">
+          <button id="applyBtn" class="secondary">Appliquer</button>
+          <button id="clearBestBtn" class="secondary">Effacer record</button>
+        </div>
+
+        <div class="small">
+          Astuce : si tu actives <b>Wrap</b>, les bords ne tuent plus — tu reviens de l’autre côté.
+          Les <b>obstacles</b> ajoutent du piment (et du sel).
+        </div>
       </div>
     </div>
   </div>
 
 <script>
 (() => {
+  // ---------- Helpers ----------
+  const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+  const same = (a, b) => a.x === b.x && a.y === b.y;
+  const key = (p) => `${p.x},${p.y}`;
+  const randInt = (max) => Math.floor(Math.random() * max);
+
+  // ---------- DOM ----------
   const canvas = document.getElementById("game");
-  const ctx = canvas.getContext("2d");
+  const ctx = canvas.getContext("2d", { alpha: false });
 
   const scoreEl = document.getElementById("score");
   const bestEl  = document.getElementById("best");
   const speedEl = document.getElementById("speed");
+  const lenEl   = document.getElementById("len");
 
-  const startBtn = document.getElementById("startBtn");
+  const playBtn  = document.getElementById("playBtn");
   const pauseBtn = document.getElementById("pauseBtn");
   const resetBtn = document.getElementById("resetBtn");
 
-  const GRID = 24;                 // 24x24 cases
-  const CELL = canvas.width / GRID; // 20px si canvas 480
+  const difficultyEl = document.getElementById("difficulty");
+  const gridSizeEl   = document.getElementById("gridSize");
+  const gridValEl    = document.getElementById("gridVal");
+  const wrapWallsEl  = document.getElementById("wrapWalls");
+  const obstaclesEl  = document.getElementById("obstacles");
+  const applyBtn     = document.getElementById("applyBtn");
+  const clearBestBtn = document.getElementById("clearBestBtn");
 
-  const STORAGE_KEY = "snake_best_v1";
+  // ---------- Storage ----------
+  const STORE = {
+    best: "snake_deluxe_best_v1",
+    opts: "snake_deluxe_opts_v1",
+  };
 
-  let best = Number(localStorage.getItem(STORAGE_KEY) || 0);
-  bestEl.textContent = best;
-
-  let running = false;
-  let paused = false;
-
-  // état de jeu
-  let snake, dir, nextDir, food, score, tickMs, lastTime, acc, dead;
-
-  function randCell() {
-    return { x: Math.floor(Math.random()*GRID), y: Math.floor(Math.random()*GRID) };
+  function loadOpts() {
+    try {
+      const raw = localStorage.getItem(STORE.opts);
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  }
+  function saveOpts(opts) {
+    localStorage.setItem(STORE.opts, JSON.stringify(opts));
   }
 
-  function same(a,b){ return a.x===b.x && a.y===b.y; }
+  // ---------- Config ----------
+  const DIFF = {
+    easy:   { baseTick: 140, accel: 2.2, minTick: 70, scoreFood: 8 },
+    normal: { baseTick: 120, accel: 2.6, minTick: 55, scoreFood: 10 },
+    hard:   { baseTick: 105, accel: 3.0, minTick: 48, scoreFood: 12 },
+    insane: { baseTick: 90,  accel: 3.4, minTick: 42, scoreFood: 15 },
+  };
 
-  function placeFood() {
-    while (true) {
-      const c = randCell();
-      if (!snake.some(s => same(s, c))) return c;
-    }
-  }
+  // ---------- Input ----------
+  class Input {
+    constructor() {
+      this.queue = [];
+      this.lastDir = {x:1,y:0};
 
-  function resetGame() {
-    snake = [{x: 8, y: 12}, {x: 7, y: 12}, {x: 6, y: 12}];
-    dir = {x: 1, y: 0};
-    nextDir = {x: 1, y: 0};
-    food = placeFood();
-    score = 0;
-    tickMs = 120; // base
-    lastTime = performance.now();
-    acc = 0;
-    dead = false;
-    paused = false;
-    updateHUD();
-    draw();
-  }
+      window.addEventListener("keydown", (e) => {
+        const k = e.key.toLowerCase();
+        if (k === "arrowup" || k === "z") this.push(0,-1);
+        else if (k === "arrowdown" || k === "s") this.push(0, 1);
+        else if (k === "arrowleft" || k === "q") this.push(-1,0);
+        else if (k === "arrowright" || k === "d") this.push(1, 0);
+      });
 
-  function updateHUD() {
-    scoreEl.textContent = score;
-    bestEl.textContent = best;
-    speedEl.textContent = (120 / tickMs).toFixed(1);
-  }
+      // swipe mobile
+      this.touchStart = null;
+      canvas.addEventListener("touchstart", (e) => {
+        const t = e.changedTouches[0];
+        this.touchStart = { x: t.clientX, y: t.clientY };
+      }, { passive:true });
 
-  function setDir(dx, dy) {
-    // empêche demi-tour instantané
-    if (dx === -dir.x && dy === -dir.y) return;
-    nextDir = {x: dx, y: dy};
-  }
+      canvas.addEventListener("touchend", (e) => {
+        if (!this.touchStart) return;
+        const t = e.changedTouches[0];
+        const dx = t.clientX - this.touchStart.x;
+        const dy = t.clientY - this.touchStart.y;
+        this.touchStart = null;
 
-  function step() {
-    dir = nextDir;
+        const deadzone = 14;
+        if (Math.abs(dx) < deadzone && Math.abs(dy) < deadzone) return;
 
-    const head = snake[0];
-    const nh = { x: head.x + dir.x, y: head.y + dir.y };
-
-    // mur = mort
-    if (nh.x < 0 || nh.x >= GRID || nh.y < 0 || nh.y >= GRID) {
-      dead = true; return;
-    }
-
-    // collision corps
-    if (snake.some((s, i) => i !== snake.length-1 && same(s, nh))) {
-      dead = true; return;
+        if (Math.abs(dx) > Math.abs(dy)) this.push(dx > 0 ? 1 : -1, 0);
+        else this.push(0, dy > 0 ? 1 : -1);
+      }, { passive:true });
     }
 
-    snake.unshift(nh);
+    push(dx,dy){
+      // empêche demi-tour par rapport à la dernière direction validée
+      if (dx === -this.lastDir.x && dy === -this.lastDir.y) return;
+      this.queue.push({x:dx,y:dy});
+      // anti-spam: on garde 2 inputs max
+      if (this.queue.length > 2) this.queue.shift();
+    }
 
-    if (same(nh, food)) {
-      score += 10;
-      // accélère un peu
-      tickMs = Math.max(55, tickMs - 3);
-      food = placeFood();
-      // best
-      if (score > best) {
-        best = score;
-        localStorage.setItem(STORAGE_KEY, String(best));
+    consume(){
+      return this.queue.shift() || null;
+    }
+
+    setLastDir(d){ this.lastDir = d; }
+  }
+
+  // ---------- Renderer ----------
+  class Renderer {
+    constructor(ctx){
+      this.ctx = ctx;
+      this.dpr = 1;
+      this.size = 800;
+    }
+
+    resize(){
+      const rect = canvas.getBoundingClientRect();
+      const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2.5)); // cap
+      this.dpr = dpr;
+
+      const side = Math.floor(Math.min(rect.width, 800)); // stable
+      this.size = side;
+
+      canvas.width  = Math.floor(side * dpr);
+      canvas.height = Math.floor(side * dpr);
+
+      // scale all drawing in CSS pixels
+      this.ctx.setTransform(dpr,0,0,dpr,0,0);
+      this.ctx.imageSmoothingEnabled = false;
+    }
+
+    clear(){
+      const c = this.ctx;
+      c.fillStyle = "#0b1020";
+      c.fillRect(0,0,this.size,this.size);
+    }
+
+    drawGrid(cell, grid){
+      const c = this.ctx;
+      // subtle gradient "floor"
+      const g = c.createLinearGradient(0,0,this.size,this.size);
+      g.addColorStop(0, "rgba(106,124,255,0.10)");
+      g.addColorStop(1, "rgba(0,255,180,0.06)");
+      c.fillStyle = g;
+      c.fillRect(0,0,this.size,this.size);
+
+      c.globalAlpha = 0.16;
+      c.strokeStyle = "#a9b7ff";
+      c.lineWidth = 1;
+      for (let i=1;i<grid;i++){
+        const p = i*cell;
+        c.beginPath(); c.moveTo(p,0); c.lineTo(p,this.size); c.stroke();
+        c.beginPath(); c.moveTo(0,p); c.lineTo(this.size,p); c.stroke();
       }
-    } else {
-      snake.pop();
+      c.globalAlpha = 1;
     }
 
-    updateHUD();
-  }
-
-  function drawGrid() {
-    // fond
-    ctx.fillStyle = "#0f1726";
-    ctx.fillRect(0,0,canvas.width,canvas.height);
-
-    // léger quadrillage
-    ctx.globalAlpha = 0.18;
-    ctx.strokeStyle = "#9fb3ff";
-    ctx.lineWidth = 1;
-    for (let i=1;i<GRID;i++){
-      ctx.beginPath(); ctx.moveTo(i*CELL,0); ctx.lineTo(i*CELL,canvas.height); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(0,i*CELL); ctx.lineTo(canvas.width,i*CELL); ctx.stroke();
-    }
-    ctx.globalAlpha = 1;
-  }
-
-  function drawCell(x,y, fill, radius=6) {
-    const px = x*CELL, py = y*CELL;
-    const pad = 2;
-    const w = CELL - pad*2, h = CELL - pad*2;
-
-    ctx.fillStyle = fill;
-    roundRect(px+pad, py+pad, w, h, radius);
-    ctx.fill();
-  }
-
-  function roundRect(x, y, w, h, r) {
-    const rr = Math.min(r, w/2, h/2);
-    ctx.beginPath();
-    ctx.moveTo(x+rr,y);
-    ctx.arcTo(x+w,y,x+w,y+h,rr);
-    ctx.arcTo(x+w,y+h,x,y+h,rr);
-    ctx.arcTo(x,y+h,x,y,rr);
-    ctx.arcTo(x,y,x+w,y,rr);
-    ctx.closePath();
-  }
-
-  function draw() {
-    drawGrid();
-
-    // nourriture
-    drawCell(food.x, food.y, "#ff4d6d", 8);
-
-    // serpent
-    snake.forEach((s, i) => {
-      const isHead = i === 0;
-      drawCell(s.x, s.y, isHead ? "#68ffb4" : "#39c98a", isHead ? 10 : 7);
-    });
-
-    if (!running) {
-      overlay("Clique ▶ Jouer");
-    } else if (paused) {
-      overlay("Pause");
-    } else if (dead) {
-      overlay(`Perdu !\nScore: ${score}\nAppuie sur R`);
-    }
-  }
-
-  function overlay(text) {
-    ctx.save();
-    ctx.fillStyle = "rgba(0,0,0,0.55)";
-    ctx.fillRect(0,0,canvas.width,canvas.height);
-
-    ctx.fillStyle = "#ffffff";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.font = "700 30px system-ui";
-
-    const lines = String(text).split("\n");
-    const startY = canvas.height/2 - (lines.length-1)*20;
-    lines.forEach((ln, idx) => ctx.fillText(ln, canvas.width/2, startY + idx*40));
-    ctx.restore();
-  }
-
-  function loop(t) {
-    requestAnimationFrame(loop);
-    if (!running) { draw(); return; }
-    if (paused) { draw(); return; }
-    if (dead) { draw(); return; }
-
-    const dt = t - lastTime;
-    lastTime = t;
-    acc += dt;
-
-    while (acc >= tickMs) {
-      acc -= tickMs;
-      step();
-      if (dead) break;
+    roundRect(x,y,w,h,r){
+      const c = this.ctx;
+      const rr = Math.min(r, w/2, h/2);
+      c.beginPath();
+      c.moveTo(x+rr, y);
+      c.arcTo(x+w, y, x+w, y+h, rr);
+      c.arcTo(x+w, y+h, x, y+h, rr);
+      c.arcTo(x, y+h, x, y, rr);
+      c.arcTo(x, y, x+w, y, rr);
+      c.closePath();
     }
 
-    draw();
-  }
+    cellRect(p, cell){
+      const pad = Math.max(1.2, cell*0.09);
+      const x = p.x*cell + pad;
+      const y = p.y*cell + pad;
+      const w = cell - pad*2;
+      const h = cell - pad*2;
+      return {x,y,w,h};
+    }
 
-  function start() {
-    if (!running) {
-      running = true;
-      paused = false;
-      lastTime = performance.now();
-    } else if (dead) {
-      resetGame();
+    drawFood(food, cell){
+      const c = this.ctx;
+      const {x,y,w,h} = this.cellRect(food, cell);
+      c.fillStyle = "#ff4d6d";
+      this.roundRect(x,y,w,h, Math.max(6, cell*0.35));
+      c.fill();
+      // glow
+      c.globalAlpha = 0.35;
+      c.fillStyle = "#ff4d6d";
+      this.roundRect(x-2,y-2,w+4,h+4, Math.max(8, cell*0.45));
+      c.fill();
+      c.globalAlpha = 1;
+    }
+
+    drawObstacles(obstacles, cell){
+      const c = this.ctx;
+      c.fillStyle = "rgba(255,255,255,0.20)";
+      for (const o of obstacles){
+        const {x,y,w,h} = this.cellRect(o, cell);
+        this.roundRect(x,y,w,h, Math.max(6, cell*0.30));
+        c.fill();
+      }
+    }
+
+    drawSnake(snake, cell){
+      const c = this.ctx;
+      for (let i=snake.length-1;i>=0;i--){
+        const s = snake[i];
+        const isHead = i === 0;
+        const {x,y,w,h} = this.cellRect(s, cell);
+
+        c.fillStyle = isHead ? "#68ffb4" : "#39c98a";
+        this.roundRect(x,y,w,h, isHead ? Math.max(10, cell*0.45) : Math.max(7, cell*0.35));
+        c.fill();
+
+        // "shine" simple
+        c.globalAlpha = isHead ? 0.25 : 0.14;
+        c.fillStyle = "#ffffff";
+        this.roundRect(x + w*0.15, y + h*0.15, w*0.45, h*0.35, Math.max(6, cell*0.25));
+        c.fill();
+        c.globalAlpha = 1;
+      }
+    }
+
+    overlay(text){
+      const c = this.ctx;
+      c.save();
+      c.fillStyle = "rgba(0,0,0,0.58)";
+      c.fillRect(0,0,this.size,this.size);
+
+      c.fillStyle = "#fff";
+      c.textAlign = "center";
+      c.textBaseline = "middle";
+
+      const lines = String(text).split("\n");
+      c.font = "900 28px system-ui";
+      const y0 = this.size/2 - (lines.length-1)*20;
+      lines.forEach((ln, i) => c.fillText(ln, this.size/2, y0 + i*40));
+
+      c.restore();
     }
   }
 
-  function togglePause() {
-    if (!running) return;
-    if (dead) return;
-    paused = !paused;
+  // ---------- Game ----------
+  class Game {
+    constructor(){
+      this.renderer = new Renderer(ctx);
+      this.input = new Input();
+
+      this.running = false;
+      this.paused = false;
+      this.dead = false;
+
+      this.best = Number(localStorage.getItem(STORE.best) || 0);
+
+      // defaults
+      const saved = loadOpts();
+      this.opts = saved || {
+        difficulty: "normal",
+        grid: 24,
+        wrapWalls: false,
+        obstacles: false,
+      };
+
+      this.applyOptsToUI();
+      this.syncBestUI();
+      this.reset(true);
+
+      // loop
+      this.last = performance.now();
+      this.acc = 0;
+      requestAnimationFrame((t)=>this.loop(t));
+
+      // resize
+      const onResize = () => { this.renderer.resize(); this.draw(); };
+      window.addEventListener("resize", onResize, { passive:true });
+      this.renderer.resize();
+      this.draw();
+    }
+
+    applyOptsToUI(){
+      difficultyEl.value = this.opts.difficulty;
+      gridSizeEl.value   = this.opts.grid;
+      gridValEl.textContent = String(this.opts.grid);
+      wrapWallsEl.checked = !!this.opts.wrapWalls;
+      obstaclesEl.checked = !!this.opts.obstacles;
+    }
+
+    readUIToOpts(){
+      this.opts = {
+        difficulty: difficultyEl.value,
+        grid: Number(gridSizeEl.value),
+        wrapWalls: wrapWallsEl.checked,
+        obstacles: obstaclesEl.checked,
+      };
+      saveOpts(this.opts);
+    }
+
+    diff(){
+      return DIFF[this.opts.difficulty] || DIFF.normal;
+    }
+
+    reset(keepRunning=false){
+      const grid = this.opts.grid;
+
+      this.grid = grid;
+      this.cell = this.renderer.size / grid;
+
+      // snake start centered-ish
+      const cx = Math.floor(grid * 0.35);
+      const cy = Math.floor(grid * 0.50);
+
+      this.snake = [{x:cx+2,y:cy}, {x:cx+1,y:cy}, {x:cx,y:cy}];
+      this.dir = {x:1,y:0};
+      this.nextDir = {x:1,y:0};
+      this.input.setLastDir(this.dir);
+
+      this.score = 0;
+      this.dead = false;
+      this.paused = false;
+
+      const d = this.diff();
+      this.tickMs = d.baseTick;
+      this.minTick = d.minTick;
+      this.accel = d.accel;
+      this.scoreFood = d.scoreFood;
+
+      this.obstacles = this.opts.obstacles ? this.makeObstacles() : [];
+      this.food = this.placeFood();
+
+      if (!keepRunning) this.running = false;
+
+      this.updateHUD();
+      this.draw();
+    }
+
+    makeObstacles(){
+      // obstacles: small set that avoids spawn zone
+      const grid = this.grid;
+      const count = clamp(Math.floor(grid / 3.2), 4, 12);
+      const set = new Set();
+      const safe = new Set(this.snake.map(key));
+
+      // add a small safe radius around head
+      const head = this.snake[0];
+      for (let dy=-2; dy<=2; dy++){
+        for (let dx=-2; dx<=2; dx++){
+          const x = head.x+dx, y = head.y+dy;
+          if (x>=0 && y>=0 && x<grid && y<grid) safe.add(`${x},${y}`);
+        }
+      }
+
+      while (set.size < count){
+        const p = {x: randInt(grid), y: randInt(grid)};
+        const k = key(p);
+        if (safe.has(k)) continue;
+        set.add(k);
+      }
+      return [...set].map(s => {
+        const [x,y] = s.split(",").map(Number);
+        return {x,y};
+      });
+    }
+
+    placeFood(){
+      const grid = this.grid;
+      const blocked = new Set(this.snake.map(key));
+      for (const o of this.obstacles) blocked.add(key(o));
+
+      // try random a few times, fallback scan
+      for (let i=0;i<60;i++){
+        const p = {x: randInt(grid), y: randInt(grid)};
+        if (!blocked.has(key(p))) return p;
+      }
+      for (let y=0;y<grid;y++){
+        for (let x=0;x<grid;x++){
+          const p = {x,y};
+          if (!blocked.has(key(p))) return p;
+        }
+      }
+      return {x:0,y:0}; // should never happen
+    }
+
+    start(){
+      if (!this.running) this.running = true;
+      if (this.dead) this.reset(true);
+      this.paused = false;
+      this.draw();
+    }
+
+    togglePause(){
+      if (!this.running || this.dead) return;
+      this.paused = !this.paused;
+      this.draw();
+    }
+
+    setBestIfNeeded(){
+      if (this.score > this.best){
+        this.best = this.score;
+        localStorage.setItem(STORE.best, String(this.best));
+      }
+    }
+
+    syncBestUI(){
+      bestEl.textContent = String(this.best);
+    }
+
+    updateHUD(){
+      scoreEl.textContent = String(this.score);
+      this.syncBestUI();
+      lenEl.textContent = String(this.snake.length);
+
+      const base = this.diff().baseTick;
+      const sp = base / this.tickMs;
+      speedEl.textContent = sp.toFixed(1);
+    }
+
+    consumeInput(){
+      const d = this.input.consume();
+      if (!d) return;
+      // anti demi-tour vs current dir
+      if (d.x === -this.dir.x && d.y === -this.dir.y) return;
+      this.nextDir = d;
+    }
+
+    step(){
+      this.consumeInput();
+      this.dir = this.nextDir;
+      this.input.setLastDir(this.dir);
+
+      const grid = this.grid;
+      const head = this.snake[0];
+      let nh = { x: head.x + this.dir.x, y: head.y + this.dir.y };
+
+      // walls
+      if (this.opts.wrapWalls){
+        nh.x = (nh.x + grid) % grid;
+        nh.y = (nh.y + grid) % grid;
+      } else {
+        if (nh.x < 0 || nh.x >= grid || nh.y < 0 || nh.y >= grid){
+          this.dead = true; return;
+        }
+      }
+
+      // collision obstacles
+      for (const o of this.obstacles){
+        if (same(o, nh)){ this.dead = true; return; }
+      }
+
+      // collision body (ignore last cell because it moves away if not eating)
+      for (let i=0; i<this.snake.length-1; i++){
+        if (same(this.snake[i], nh)){ this.dead = true; return; }
+      }
+
+      this.snake.unshift(nh);
+
+      if (same(nh, this.food)){
+        this.score += this.scoreFood;
+        this.setBestIfNeeded();
+
+        // accelerate smoothly
+        this.tickMs = Math.max(this.minTick, this.tickMs - this.accel);
+
+        // add a tiny chance to spawn extra obstacles (only if enabled)
+        if (this.opts.obstacles && this.obstacles.length < clamp(Math.floor(grid/2.8), 10, 20)){
+          if (Math.random() < 0.20){
+            const o = this.placeObstacle();
+            if (o) this.obstacles.push(o);
+          }
+        }
+
+        this.food = this.placeFood();
+      } else {
+        this.snake.pop();
+      }
+
+      this.updateHUD();
+    }
+
+    placeObstacle(){
+      const grid = this.grid;
+      const blocked = new Set(this.snake.map(key));
+      blocked.add(key(this.food));
+      for (const o of this.obstacles) blocked.add(key(o));
+
+      for (let i=0;i<80;i++){
+        const p = {x: randInt(grid), y: randInt(grid)};
+        const k = key(p);
+        if (blocked.has(k)) continue;
+
+        // avoid spawning right in front of head
+        const head = this.snake[0];
+        if (Math.abs(p.x - head.x) <= 1 && Math.abs(p.y - head.y) <= 1) continue;
+        return p;
+      }
+      return null;
+    }
+
+    draw(){
+      // recompute cell size from current renderer size (responsive)
+      this.cell = this.renderer.size / this.grid;
+
+      this.renderer.clear();
+      this.renderer.drawGrid(this.cell, this.grid);
+      if (this.obstacles.length) this.renderer.drawObstacles(this.obstacles, this.cell);
+      this.renderer.drawFood(this.food, this.cell);
+      this.renderer.drawSnake(this.snake, this.cell);
+
+      if (!this.running) this.renderer.overlay("▶ Clique sur Jouer\n(ou Entrée)");
+      else if (this.paused) this.renderer.overlay("⏸ Pause");
+      else if (this.dead) this.renderer.overlay(`💀 Perdu\nScore: ${this.score}\nR pour restart`);
+    }
+
+    loop(t){
+      requestAnimationFrame((tt)=>this.loop(tt));
+
+      const dt = Math.min(50, t - this.last); // clamp to avoid huge jumps
+      this.last = t;
+
+      // always render at least once per frame for smoothness
+      if (!this.running || this.paused || this.dead) { this.draw(); return; }
+
+      this.acc += dt;
+      // fixed-step simulation
+      while (this.acc >= this.tickMs){
+        this.acc -= this.tickMs;
+        this.step();
+        if (this.dead) break;
+      }
+      this.draw();
+    }
   }
 
-  // Keyboard
-  window.addEventListener("keydown", (e) => {
-    const k = e.key.toLowerCase();
-    if (k === "arrowup" || k === "z") setDir(0,-1);
-    if (k === "arrowdown" || k === "s") setDir(0, 1);
-    if (k === "arrowleft" || k === "q") setDir(-1,0);
-    if (k === "arrowright" || k === "d") setDir(1, 0);
+  // ---------- Boot ----------
+  const game = new Game();
 
-    if (k === " "){ e.preventDefault(); togglePause(); }
-    if (k === "r"){ resetGame(); running = true; paused = false; }
-    if (k === "enter"){ start(); }
+  // UI events
+  gridSizeEl.addEventListener("input", () => {
+    gridValEl.textContent = String(gridSizeEl.value);
   });
 
-  // Mobile swipe
-  let touchStart = null;
-  canvas.addEventListener("touchstart", (e) => {
-    const t = e.changedTouches[0];
-    touchStart = {x: t.clientX, y: t.clientY};
-  }, {passive:true});
+  playBtn.addEventListener("click", () => game.start());
+  pauseBtn.addEventListener("click", () => game.togglePause());
+  resetBtn.addEventListener("click", () => game.reset(true));
 
-  canvas.addEventListener("touchend", (e) => {
-    if (!touchStart) return;
-    const t = e.changedTouches[0];
-    const dx = t.clientX - touchStart.x;
-    const dy = t.clientY - touchStart.y;
-    touchStart = null;
+  applyBtn.addEventListener("click", () => {
+    game.readUIToOpts();
+    game.applyOptsToUI();
+    game.reset(true);
+    game.running = true;
+  });
 
-    if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+  clearBestBtn.addEventListener("click", () => {
+    localStorage.removeItem(STORE.best);
+    game.best = 0;
+    game.syncBestUI();
+  });
 
-    if (Math.abs(dx) > Math.abs(dy)) {
-      setDir(dx > 0 ? 1 : -1, 0);
-    } else {
-      setDir(0, dy > 0 ? 1 : -1);
-    }
-  }, {passive:true});
+  // global keys (pause/start/reset)
+  window.addEventListener("keydown", (e) => {
+    const k = e.key.toLowerCase();
+    if (k === " "){ e.preventDefault(); game.togglePause(); }
+    if (k === "enter") game.start();
+    if (k === "r") { game.reset(true); game.running = true; }
+  });
 
-  startBtn.addEventListener("click", start);
-  pauseBtn.addEventListener("click", togglePause);
-  resetBtn.addEventListener("click", () => { resetGame(); running = true; paused = false; });
-
-  // init
-  resetGame();
-  requestAnimationFrame(loop);
 })();
 </script>
 </body>
