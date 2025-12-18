@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Snake — Mini Jeu</title>
+  <style>
+    :root { color-scheme: dark; }
+    body {
+      margin: 0; min-height: 100vh; display: grid; place-items: center;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background: #0b0f16; color: #e9eef7;
+    }
+    .wrap { width: min(520px, 92vw); }
+    .top {
+      display:flex; gap:12px; align-items:center; justify-content:space-between;
+      margin-bottom: 10px;
+    }
+    .card {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 16px;
+      padding: 14px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    }
+    canvas { width: 100%; height: auto; display:block; border-radius: 12px; }
+    .hud { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .pill {
+      padding: 6px 10px; border-radius: 999px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.10);
+      font-size: 14px;
+    }
+    button {
+      cursor:pointer; border: 0; border-radius: 12px; padding: 10px 12px;
+      background: #2b6cff; color: white; font-weight: 700;
+    }
+    button.secondary { background: rgba(255,255,255,0.10); }
+    .hint { opacity: .85; font-size: 13px; margin-top: 10px; line-height: 1.35; }
+    .hint kbd {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 12px;
+      padding: 2px 6px; border-radius: 6px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div class="hud">
+        <div class="pill">Score : <span id="score">0</span></div>
+        <div class="pill">Record : <span id="best">0</span></div>
+        <div class="pill">Vitesse : <span id="speed">1.0</span>x</div>
+      </div>
+      <div class="hud">
+        <button id="startBtn">▶ Jouer</button>
+        <button id="pauseBtn" class="secondary">⏸ Pause</button>
+        <button id="resetBtn" class="secondary">↻ Reset</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <canvas id="game" width="480" height="480"></canvas>
+      <div class="hint">
+        Contrôles : <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> ou <kbd>ZQSD</kbd> •
+        Pause : <kbd>Espace</kbd> • Restart : <kbd>R</kbd><br/>
+        Sur mobile : glisse ton doigt dans une direction.
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d");
+
+  const scoreEl = document.getElementById("score");
+  const bestEl  = document.getElementById("best");
+  const speedEl = document.getElementById("speed");
+
+  const startBtn = document.getElementById("startBtn");
+  const pauseBtn = document.getElementById("pauseBtn");
+  const resetBtn = document.getElementById("resetBtn");
+
+  const GRID = 24;                 // 24x24 cases
+  const CELL = canvas.width / GRID; // 20px si canvas 480
+
+  const STORAGE_KEY = "snake_best_v1";
+
+  let best = Number(localStorage.getItem(STORAGE_KEY) || 0);
+  bestEl.textContent = best;
+
+  let running = false;
+  let paused = false;
+
+  // état de jeu
+  let snake, dir, nextDir, food, score, tickMs, lastTime, acc, dead;
+
+  function randCell() {
+    return { x: Math.floor(Math.random()*GRID), y: Math.floor(Math.random()*GRID) };
+  }
+
+  function same(a,b){ return a.x===b.x && a.y===b.y; }
+
+  function placeFood() {
+    while (true) {
+      const c = randCell();
+      if (!snake.some(s => same(s, c))) return c;
+    }
+  }
+
+  function resetGame() {
+    snake = [{x: 8, y: 12}, {x: 7, y: 12}, {x: 6, y: 12}];
+    dir = {x: 1, y: 0};
+    nextDir = {x: 1, y: 0};
+    food = placeFood();
+    score = 0;
+    tickMs = 120; // base
+    lastTime = performance.now();
+    acc = 0;
+    dead = false;
+    paused = false;
+    updateHUD();
+    draw();
+  }
+
+  function updateHUD() {
+    scoreEl.textContent = score;
+    bestEl.textContent = best;
+    speedEl.textContent = (120 / tickMs).toFixed(1);
+  }
+
+  function setDir(dx, dy) {
+    // empêche demi-tour instantané
+    if (dx === -dir.x && dy === -dir.y) return;
+    nextDir = {x: dx, y: dy};
+  }
+
+  function step() {
+    dir = nextDir;
+
+    const head = snake[0];
+    const nh = { x: head.x + dir.x, y: head.y + dir.y };
+
+    // mur = mort
+    if (nh.x < 0 || nh.x >= GRID || nh.y < 0 || nh.y >= GRID) {
+      dead = true; return;
+    }
+
+    // collision corps
+    if (snake.some((s, i) => i !== snake.length-1 && same(s, nh))) {
+      dead = true; return;
+    }
+
+    snake.unshift(nh);
+
+    if (same(nh, food)) {
+      score += 10;
+      // accélère un peu
+      tickMs = Math.max(55, tickMs - 3);
+      food = placeFood();
+      // best
+      if (score > best) {
+        best = score;
+        localStorage.setItem(STORAGE_KEY, String(best));
+      }
+    } else {
+      snake.pop();
+    }
+
+    updateHUD();
+  }
+
+  function drawGrid() {
+    // fond
+    ctx.fillStyle = "#0f1726";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    // léger quadrillage
+    ctx.globalAlpha = 0.18;
+    ctx.strokeStyle = "#9fb3ff";
+    ctx.lineWidth = 1;
+    for (let i=1;i<GRID;i++){
+      ctx.beginPath(); ctx.moveTo(i*CELL,0); ctx.lineTo(i*CELL,canvas.height); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0,i*CELL); ctx.lineTo(canvas.width,i*CELL); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawCell(x,y, fill, radius=6) {
+    const px = x*CELL, py = y*CELL;
+    const pad = 2;
+    const w = CELL - pad*2, h = CELL - pad*2;
+
+    ctx.fillStyle = fill;
+    roundRect(px+pad, py+pad, w, h, radius);
+    ctx.fill();
+  }
+
+  function roundRect(x, y, w, h, r) {
+    const rr = Math.min(r, w/2, h/2);
+    ctx.beginPath();
+    ctx.moveTo(x+rr,y);
+    ctx.arcTo(x+w,y,x+w,y+h,rr);
+    ctx.arcTo(x+w,y+h,x,y+h,rr);
+    ctx.arcTo(x,y+h,x,y,rr);
+    ctx.arcTo(x,y,x+w,y,rr);
+    ctx.closePath();
+  }
+
+  function draw() {
+    drawGrid();
+
+    // nourriture
+    drawCell(food.x, food.y, "#ff4d6d", 8);
+
+    // serpent
+    snake.forEach((s, i) => {
+      const isHead = i === 0;
+      drawCell(s.x, s.y, isHead ? "#68ffb4" : "#39c98a", isHead ? 10 : 7);
+    });
+
+    if (!running) {
+      overlay("Clique ▶ Jouer");
+    } else if (paused) {
+      overlay("Pause");
+    } else if (dead) {
+      overlay(`Perdu !\nScore: ${score}\nAppuie sur R`);
+    }
+  }
+
+  function overlay(text) {
+    ctx.save();
+    ctx.fillStyle = "rgba(0,0,0,0.55)";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = "700 30px system-ui";
+
+    const lines = String(text).split("\n");
+    const startY = canvas.height/2 - (lines.length-1)*20;
+    lines.forEach((ln, idx) => ctx.fillText(ln, canvas.width/2, startY + idx*40));
+    ctx.restore();
+  }
+
+  function loop(t) {
+    requestAnimationFrame(loop);
+    if (!running) { draw(); return; }
+    if (paused) { draw(); return; }
+    if (dead) { draw(); return; }
+
+    const dt = t - lastTime;
+    lastTime = t;
+    acc += dt;
+
+    while (acc >= tickMs) {
+      acc -= tickMs;
+      step();
+      if (dead) break;
+    }
+
+    draw();
+  }
+
+  function start() {
+    if (!running) {
+      running = true;
+      paused = false;
+      lastTime = performance.now();
+    } else if (dead) {
+      resetGame();
+    }
+  }
+
+  function togglePause() {
+    if (!running) return;
+    if (dead) return;
+    paused = !paused;
+  }
+
+  // Keyboard
+  window.addEventListener("keydown", (e) => {
+    const k = e.key.toLowerCase();
+    if (k === "arrowup" || k === "z") setDir(0,-1);
+    if (k === "arrowdown" || k === "s") setDir(0, 1);
+    if (k === "arrowleft" || k === "q") setDir(-1,0);
+    if (k === "arrowright" || k === "d") setDir(1, 0);
+
+    if (k === " "){ e.preventDefault(); togglePause(); }
+    if (k === "r"){ resetGame(); running = true; paused = false; }
+    if (k === "enter"){ start(); }
+  });
+
+  // Mobile swipe
+  let touchStart = null;
+  canvas.addEventListener("touchstart", (e) => {
+    const t = e.changedTouches[0];
+    touchStart = {x: t.clientX, y: t.clientY};
+  }, {passive:true});
+
+  canvas.addEventListener("touchend", (e) => {
+    if (!touchStart) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - touchStart.x;
+    const dy = t.clientY - touchStart.y;
+    touchStart = null;
+
+    if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+
+    if (Math.abs(dx) > Math.abs(dy)) {
+      setDir(dx > 0 ? 1 : -1, 0);
+    } else {
+      setDir(0, dy > 0 ? 1 : -1);
+    }
+  }, {passive:true});
+
+  startBtn.addEventListener("click", start);
+  pauseBtn.addEventListener("click", togglePause);
+  resetBtn.addEventListener("click", () => { resetGame(); running = true; paused = false; });
+
+  // init
+  resetGame();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
