@@ -309,6 +309,54 @@ body{
 }
 
 /* =========================
+   ŒIL MYSTIQUE (UI)
+   - nécessite: .eyeWrap, .eyeBase, .eyeIris dans ton HTML
+========================= */
+.eyeWrap{
+  position:absolute;
+  right:24px;
+  top:110px;
+  width:220px;
+  height:170px;
+  pointer-events:none;
+  filter: drop-shadow(0 18px 30px rgba(0,0,0,.35));
+}
+
+.eyeBase{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  display:block;
+}
+
+/* Iris (petit cercle sombre) */
+.eyeIris{
+  position:absolute;
+  width:24px;
+  height:24px;
+  border-radius:999px;
+  background: rgba(50,35,22,.55);
+  left:50%;
+  top:56%;
+  transform: translate(-50%,-50%);
+  filter: blur(.6px);
+  transition: transform .12s ease-out;
+  mix-blend-mode: multiply;
+}
+
+/* Clignement */
+.eyeWrap.blink{
+  transform-origin: 50% 50%;
+  animation: blinkAnim 140ms ease-in-out 0s 1;
+}
+
+@keyframes blinkAnim{
+  0%   { transform: scaleY(1); }
+  50%  { transform: scaleY(0.08); }
+  100% { transform: scaleY(1); }
+}
+
+/* =========================
    ACCESSIBILITÉ
 ========================= */
 @media (prefers-reduced-motion: reduce){
