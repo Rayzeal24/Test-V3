@@ -39,23 +39,18 @@ function escapeHtml(str) {
 }
 
 /* =========================
-   HOME MENU (CLASH-LIKE)
+   HOME MENU (POLITARIA)
 ========================= */
 function homeMenuUI(save) {
   const lang = save.settings.language || "fr";
   const t = i18n(lang);
 
-  // Chemin exact de ton œil (avec espaces -> encodeURI)
-  const eyeSrc = encodeURI("./images/main/20251219_1614_Mystical Stone Eye_simple_compose_01kcvjsfygeqw9jx9smt6fk25j.png");
+  const eyeSrc = encodeURI(
+    "./images/main/20251219_1614_Mystical Stone Eye_simple_compose_01kcvjsfygeqw9jx9smt6fk25j.png"
+  );
 
   mount(`
     <div class="home">
-
-      <!-- ŒIL MYSTIQUE -->
-      <div class="eyeWrap" id="eyeWrap">
-        <img src="${eyeSrc}" class="eyeBase" alt="Mystical stone eye">
-        <div class="eyeIris" id="eyeIris"></div>
-      </div>
 
       <div class="topbar">
         <div class="logo">
@@ -67,11 +62,10 @@ function homeMenuUI(save) {
       </div>
 
       <div class="center">
-        <button id="btnPlay" class="playBtn" aria-label="${t.play}">
-          <div class="playOuter">
-            <div class="playMetal"></div>
-            <div class="playWood"></div>
-            <div class="playTriangle"></div>
+        <button id="btnPlay" class="eyeBtn" aria-label="${t.play}">
+          <div class="eyeWrap centerEye" id="eyeWrap">
+            <img src="${eyeSrc}" class="eyeBase" alt="Mystical stone eye">
+            <div class="eyeIris" id="eyeIris"></div>
           </div>
         </button>
       </div>
@@ -89,8 +83,8 @@ function homeMenuUI(save) {
   `);
 
   injectHomeCssOnce();
-  setupEyeFollow(); // smooth follow + anti-duplication
-  setupEyeBlink();  // blink auto
+  setupEyeFollow();
+  setupEyeBlink();
 
   /* ===== Audio ===== */
   const btnAudio = document.getElementById("btnAudio");
@@ -111,7 +105,7 @@ function homeMenuUI(save) {
 
   /* ===== Lang ===== */
   document.getElementById("btnLang").onclick = () => {
-    save.settings.language = (save.settings.language === "fr") ? "en" : "fr";
+    save.settings.language = save.settings.language === "fr" ? "en" : "fr";
     saveGame(save);
     homeMenuUI(save);
   };
@@ -130,100 +124,79 @@ function homeMenuUI(save) {
 }
 
 /* =========================
-   ŒIL : FOLLOW MOUSE (SMOOTH + NO DUPLICATE LISTENERS)
+   EYE FOLLOW (SMOOTH)
 ========================= */
-let _eyeFollowBound = false;
+let _eyeBound = false;
 
-function setupEyeFollow(){
+function setupEyeFollow() {
   const eye = document.getElementById("eyeWrap");
   const iris = document.getElementById("eyeIris");
-  if(!eye || !iris) return;
+  if (!eye || !iris) return;
 
-  // refs actuelles (utile quand homeMenuUI re-render)
-  window._eyeFollowRefs = { eye, iris };
+  window._eyeRefs = { eye, iris };
+  if (_eyeBound) return;
+  _eyeBound = true;
 
-  if (_eyeFollowBound) return;
-  _eyeFollowBound = true;
+  const MAX = 7;
+  const SMOOTH = 0.15;
+  let tx = 0, ty = 0, x = 0, y = 0, raf = 0;
 
-  const MAX = 6;        // amplitude max (px)
-  const SMOOTH = 0.12;  // douceur
-
-  let tx = 0, ty = 0;   // target
-  let x = 0, y = 0;     // current
-  let raf = 0;
-
-  function tick(){
+  function tick() {
     raf = 0;
-    const refs = window._eyeFollowRefs;
-    if (!refs || !refs.eye || !refs.iris) return;
-
+    const r = window._eyeRefs;
+    if (!r) return;
     x += (tx - x) * SMOOTH;
     y += (ty - y) * SMOOTH;
-
-    refs.iris.style.transform =
+    r.iris.style.transform =
       `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
   }
 
-  function requestTick(){
-    if(!raf) raf = requestAnimationFrame(tick);
+  function move(e) {
+    const r = window._eyeRefs.eye.getBoundingClientRect();
+    const dx = e.clientX - (r.left + r.width / 2);
+    const dy = e.clientY - (r.top + r.height / 2);
+    const a = Math.atan2(dy, dx);
+    tx = Math.cos(a) * MAX;
+    ty = Math.sin(a) * MAX;
+    if (!raf) raf = requestAnimationFrame(tick);
   }
 
-  function onMove(e){
-    const refs = window._eyeFollowRefs;
-    if (!refs || !refs.eye) return;
-
-    const r = refs.eye.getBoundingClientRect();
-    const cx = r.left + r.width / 2;
-    const cy = r.top + r.height / 2;
-
-    const dx = e.clientX - cx;
-    const dy = e.clientY - cy;
-
-    const ang = Math.atan2(dy, dx);
-    tx = Math.cos(ang) * MAX;
-    ty = Math.sin(ang) * MAX;
-
-    requestTick();
-  }
-
-  function onLeave(){
+  function reset() {
     tx = 0; ty = 0;
-    requestTick();
+    if (!raf) raf = requestAnimationFrame(tick);
   }
 
-  window.addEventListener("mousemove", onMove, { passive:true });
-  window.addEventListener("blur", onLeave);
-  document.addEventListener("mouseleave", onLeave);
+  window.addEventListener("mousemove", move, { passive: true });
+  window.addEventListener("blur", reset);
+  document.addEventListener("mouseleave", reset);
 }
 
 /* =========================
-   ŒIL : BLINK (AUTO)
+   EYE BLINK
 ========================= */
-function setupEyeBlink(){
+function setupEyeBlink() {
   const eye = document.getElementById("eyeWrap");
-  if(!eye) return;
+  if (!eye) return;
 
-  if (window._eyeBlinkT) clearTimeout(window._eyeBlinkT);
+  clearTimeout(window._blinkT);
 
-  function schedule(){
-    const delay = 6000 + Math.random() * 5000; // 6s -> 11s
-    window._eyeBlinkT = setTimeout(() => {
+  function loop() {
+    window._blinkT = setTimeout(() => {
       eye.classList.remove("blink");
-      void eye.offsetWidth; // force reflow
+      void eye.offsetWidth;
       eye.classList.add("blink");
-      schedule();
-    }, delay);
+      loop();
+    }, 6000 + Math.random() * 5000);
   }
 
-  schedule();
+  loop();
 }
 
 /* =========================
    FIRST LAUNCH
 ========================= */
 function firstLaunchUI(save) {
-  const lang = save.settings.language || "fr";
-  const t = i18n(lang);
+  const t = i18n(save.settings.language);
 
   mount(`
     <div class="card">
@@ -245,6 +218,7 @@ function firstLaunchUI(save) {
 ========================= */
 function menuUI(save) {
   const t = i18n(save.settings.language);
+
   mount(`
     <div class="card">
       <h1 class="title">${t.menu}</h1>
@@ -261,32 +235,34 @@ function menuUI(save) {
 function i18n(lang) {
   const fr = {
     titleTop: "TOWER DEFENSE",
-    titleBottom: "CLASH",
+    titleBottom: "POLITARIA",
     audio: "Son",
     play: "Jouer",
-    hint: "Appuie sur Play — {name}, prêt à défendre ?",
-    helpText: "Clique Play pour commencer.",
+    hint: "Appuie sur l’œil — {name}, prêt à défendre ?",
+    helpText: "Clique sur l’œil pour commencer.",
     welcome: "Bienvenue !",
     welcomeSub: "Configuration initiale.",
     start: "Commencer",
     guest: "Invité",
     menu: "Menu",
-    home: "Accueil",
+    home: "Accueil"
   };
+
   const en = {
     titleTop: "TOWER DEFENSE",
-    titleBottom: "CLASH",
+    titleBottom: "POLITARIA",
     audio: "Audio",
     play: "Play",
-    hint: "Press Play — {name}, ready?",
-    helpText: "Click Play to start.",
+    hint: "Click the eye — {name}, ready?",
+    helpText: "Click the eye to start.",
     welcome: "Welcome!",
     welcomeSub: "Initial setup.",
     start: "Start",
     guest: "Guest",
     menu: "Menu",
-    home: "Home",
+    home: "Home"
   };
+
   return lang === "en" ? en : fr;
 }
 
@@ -300,67 +276,24 @@ function toast(text) {
     el.id = "toast";
     document.body.appendChild(el);
     Object.assign(el.style,{
-      position:"fixed",left:"50%",bottom:"26px",
+      position:"fixed",
+      left:"50%",
+      bottom:"26px",
       transform:"translateX(-50%)",
       background:"rgba(0,0,0,.55)",
       border:"1px solid rgba(255,255,255,.18)",
-      padding:"10px 12px",borderRadius:"12px",
-      color:"#fff",zIndex:"99",opacity:"0",
+      padding:"10px 12px",
+      borderRadius:"12px",
+      color:"#fff",
+      zIndex:"99",
+      opacity:"0",
       transition:"opacity .15s ease"
     });
   }
   el.textContent = text;
   el.style.opacity = "1";
   clearTimeout(el._t);
-  el._t = setTimeout(()=>el.style.opacity="0",2200);
-}
-
-/* =========================
-   CSS HOME (INJECTED ONCE)
-========================= */
-function injectHomeCssOnce() {
-  if (document.getElementById("home-css")) return;
-  const s = document.createElement("style");
-  s.id = "home-css";
-  s.textContent = `
-    .eyeWrap{
-      position:absolute;
-      right:24px;
-      top:110px;
-      width:220px;
-      height:170px;
-      pointer-events:none;
-      filter: drop-shadow(0 18px 30px rgba(0,0,0,.35));
-    }
-    .eyeBase{
-      width:100%;
-      height:100%;
-      object-fit:contain;
-      display:block;
-    }
-    .eyeIris{
-      position:absolute;
-      width:24px;height:24px;
-      border-radius:999px;
-      background:rgba(50,35,22,.55);
-      left:50%;top:56%;
-      transform:translate(-50%,-50%);
-      filter:blur(.6px);
-      mix-blend-mode:multiply;
-    }
-
-    /* Blink */
-    .eyeWrap.blink{
-      transform-origin: 50% 50%;
-      animation: blinkAnim 140ms ease-in-out 0s 1;
-    }
-    @keyframes blinkAnim{
-      0%   { transform: scaleY(1); }
-      50%  { transform: scaleY(0.08); }
-      100% { transform: scaleY(1); }
-    }
-  `;
-  document.head.appendChild(s);
+  el._t = setTimeout(() => el.style.opacity = "0", 2200);
 }
 
 /* =========================
