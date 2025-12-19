@@ -1,15 +1,13 @@
-import Phaser from "phaser";
-import BootScene from "./scenes/BootScene";
-import FirstLaunchScene from "./scenes/FirstLaunchScene";
-import MenuScene from "./scenes/MenuScene";
-
-const config = {
-  type: Phaser.AUTO,
-  width: 768,
-  height: 480,
-  parent: "app", // <-- important (le div #app)
-  backgroundColor: "#0f1220",
-  scene: [BootScene, FirstLaunchScene, MenuScene],
-};
-
-new Phaser.Game(config);
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Tower Defense (Clash-like)</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div id="app"></div>
+  <script src="./main.js"></script>
+</body>
+</html>
