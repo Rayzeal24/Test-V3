@@ -45,12 +45,15 @@ function homeMenuUI(save) {
   const lang = save.settings.language || "fr";
   const t = i18n(lang);
 
+  // Chemin exact de ton œil (avec espaces -> encodeURI)
+  const eyeSrc = encodeURI("./images/main/20251219_1614_Mystical Stone Eye_simple_compose_01kcvjsfygeqw9jx9smt6fk25j.png");
+
   mount(`
     <div class="home">
 
       <!-- ŒIL MYSTIQUE -->
       <div class="eyeWrap" id="eyeWrap">
-        <img src="./images/main/task_01kcvg1rb3fcevk5d7mnwta9g3_1766154402_img_0.webp" class="eyeBase" alt="">
+        <img src="${eyeSrc}" class="eyeBase" alt="Mystical stone eye">
         <div class="eyeIris" id="eyeIris"></div>
       </div>
 
@@ -86,7 +89,8 @@ function homeMenuUI(save) {
   `);
 
   injectHomeCssOnce();
-  setupEyeFollow();
+  setupEyeFollow(); // smooth follow + anti-duplication
+  setupEyeBlink();  // blink auto
 
   /* ===== Audio ===== */
   const btnAudio = document.getElementById("btnAudio");
@@ -126,32 +130,92 @@ function homeMenuUI(save) {
 }
 
 /* =========================
-   ŒIL : FOLLOW MOUSE
+   ŒIL : FOLLOW MOUSE (SMOOTH + NO DUPLICATE LISTENERS)
 ========================= */
+let _eyeFollowBound = false;
+
 function setupEyeFollow(){
   const eye = document.getElementById("eyeWrap");
   const iris = document.getElementById("eyeIris");
   if(!eye || !iris) return;
 
-  const MAX = 6;
+  // refs actuelles (utile quand homeMenuUI re-render)
+  window._eyeFollowRefs = { eye, iris };
 
-  function move(e){
-    const r = eye.getBoundingClientRect();
+  if (_eyeFollowBound) return;
+  _eyeFollowBound = true;
+
+  const MAX = 6;        // amplitude max (px)
+  const SMOOTH = 0.12;  // douceur
+
+  let tx = 0, ty = 0;   // target
+  let x = 0, y = 0;     // current
+  let raf = 0;
+
+  function tick(){
+    raf = 0;
+    const refs = window._eyeFollowRefs;
+    if (!refs || !refs.eye || !refs.iris) return;
+
+    x += (tx - x) * SMOOTH;
+    y += (ty - y) * SMOOTH;
+
+    refs.iris.style.transform =
+      `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
+  }
+
+  function requestTick(){
+    if(!raf) raf = requestAnimationFrame(tick);
+  }
+
+  function onMove(e){
+    const refs = window._eyeFollowRefs;
+    if (!refs || !refs.eye) return;
+
+    const r = refs.eye.getBoundingClientRect();
     const cx = r.left + r.width / 2;
     const cy = r.top + r.height / 2;
 
     const dx = e.clientX - cx;
     const dy = e.clientY - cy;
+
     const ang = Math.atan2(dy, dx);
+    tx = Math.cos(ang) * MAX;
+    ty = Math.sin(ang) * MAX;
 
-    const x = Math.cos(ang) * MAX;
-    const y = Math.sin(ang) * MAX;
-
-    iris.style.transform =
-      `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
+    requestTick();
   }
 
-  window.addEventListener("mousemove", move, { passive:true });
+  function onLeave(){
+    tx = 0; ty = 0;
+    requestTick();
+  }
+
+  window.addEventListener("mousemove", onMove, { passive:true });
+  window.addEventListener("blur", onLeave);
+  document.addEventListener("mouseleave", onLeave);
+}
+
+/* =========================
+   ŒIL : BLINK (AUTO)
+========================= */
+function setupEyeBlink(){
+  const eye = document.getElementById("eyeWrap");
+  if(!eye) return;
+
+  if (window._eyeBlinkT) clearTimeout(window._eyeBlinkT);
+
+  function schedule(){
+    const delay = 6000 + Math.random() * 5000; // 6s -> 11s
+    window._eyeBlinkT = setTimeout(() => {
+      eye.classList.remove("blink");
+      void eye.offsetWidth; // force reflow
+      eye.classList.add("blink");
+      schedule();
+    }, delay);
+  }
+
+  schedule();
 }
 
 /* =========================
@@ -252,7 +316,7 @@ function toast(text) {
 }
 
 /* =========================
-   CSS HOME (ONCE)
+   CSS HOME (INJECTED ONCE)
 ========================= */
 function injectHomeCssOnce() {
   if (document.getElementById("home-css")) return;
@@ -268,7 +332,12 @@ function injectHomeCssOnce() {
       pointer-events:none;
       filter: drop-shadow(0 18px 30px rgba(0,0,0,.35));
     }
-    .eyeBase{width:100%;height:100%}
+    .eyeBase{
+      width:100%;
+      height:100%;
+      object-fit:contain;
+      display:block;
+    }
     .eyeIris{
       position:absolute;
       width:24px;height:24px;
@@ -277,8 +346,18 @@ function injectHomeCssOnce() {
       left:50%;top:56%;
       transform:translate(-50%,-50%);
       filter:blur(.6px);
-      transition:transform .12s ease-out;
       mix-blend-mode:multiply;
+    }
+
+    /* Blink */
+    .eyeWrap.blink{
+      transform-origin: 50% 50%;
+      animation: blinkAnim 140ms ease-in-out 0s 1;
+    }
+    @keyframes blinkAnim{
+      0%   { transform: scaleY(1); }
+      50%  { transform: scaleY(0.08); }
+      100% { transform: scaleY(1); }
     }
   `;
   document.head.appendChild(s);
