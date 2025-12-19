@@ -6,8 +6,7 @@
   --panel:#12162a;
   --stroke:#2a3156;
   --gold:#FFD54A;
-  --btn:#1a2040;
-  --btn2:#3a4bb0;
+
   --ok:#2da44e;
   --danger:#8b2d2d;
 }
@@ -146,7 +145,7 @@ body{
 }
 
 /* =========================
-   CENTER (PLAY)
+   CENTER (EYE PLAY)
 ========================= */
 .center{
   flex:1;
@@ -154,112 +153,63 @@ body{
   place-items:center;
 }
 
-/* =========================
-   PLAY BUTTON (STYLE ANIME)
-========================= */
-.playBtn{
+/* Bouton cliquable (autour de l’œil) */
+.eyeBtn{
   border:none;
-  background:none;
+  background:transparent;
   cursor:pointer;
   padding:0;
   transition: transform .12s ease;
-  filter: drop-shadow(0 22px 40px rgba(0,0,0,.28));
+  filter: drop-shadow(0 22px 40px rgba(0,0,0,.30));
 }
 
-.playBtn:hover{
-  transform: translateY(-4px) scale(1.02);
+.eyeBtn:hover{
+  transform: translateY(-4px) scale(1.03);
 }
 
-.playBtn:active{
+.eyeBtn:active{
   transform: translateY(-1px) scale(0.99);
 }
 
-.playOuter{
-  width:190px;
-  height:190px;
-  border-radius:999px;
+/* Bloc œil centré */
+.eyeWrap{
   position:relative;
-  display:grid;
-  place-items:center;
+  width:260px;
+  height:220px;
+  pointer-events:none; /* c’est le bouton qui clique */
 }
 
-/* Anneau pierre peint */
-.playMetal{
+.eyeBase{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  display:block;
+}
+
+/* Iris (cercle sombre qui bouge) */
+.eyeIris{
   position:absolute;
-  inset:0;
+  width:26px;
+  height:26px;
   border-radius:999px;
-
-  background:
-    radial-gradient(circle at 35% 28%,
-      rgba(255,238,210,.65) 0 24%,
-      transparent 45%
-    ),
-    radial-gradient(circle at 75% 78%,
-      rgba(0,0,0,.22) 0 36%,
-      transparent 55%
-    ),
-    linear-gradient(180deg,
-      #c7d2e2 0%,
-      #8ea0b8 55%,
-      #72839c 100%
-    );
-
-  border:10px solid rgba(30,36,52,.30);
-  box-shadow:
-    inset 0 10px 18px rgba(255,255,255,.18),
-    inset 0 -18px 26px rgba(0,0,0,.18);
+  background: rgba(50,35,22,.55);
+  left:50%;
+  top:56%;
+  transform: translate(-50%,-50%);
+  filter: blur(.6px);
+  mix-blend-mode: multiply;
 }
 
-.playMetal::after{
-  content:"";
-  position:absolute;
-  inset:10px;
-  border-radius:999px;
-  background:
-    repeating-linear-gradient(45deg,
-      rgba(255,255,255,.04) 0 2px,
-      rgba(0,0,0,.03) 2px 4px
-    );
-  opacity:.35;
+/* Blink */
+.eyeWrap.blink{
+  transform-origin: 50% 50%;
+  animation: blinkAnim 140ms ease-in-out 0s 1;
 }
 
-/* Disque bois peint */
-.playWood{
-  position:absolute;
-  width:140px;
-  height:140px;
-  border-radius:999px;
-
-  background:
-    radial-gradient(circle at 38% 30%,
-      rgba(255,255,255,.18) 0 30%,
-      transparent 60%
-    ),
-    repeating-linear-gradient(90deg,
-      rgba(255,255,255,.05) 0 6px,
-      rgba(0,0,0,.06) 6px 12px
-    ),
-    linear-gradient(180deg,
-      #9a6a43 0%,
-      #6e4427 55%,
-      #4a2c18 100%
-    );
-
-  border:7px solid rgba(20,15,10,.25);
-  box-shadow:
-    inset 0 12px 18px rgba(0,0,0,.14);
-}
-
-.playTriangle{
-  width:0;
-  height:0;
-  border-top:22px solid transparent;
-  border-bottom:22px solid transparent;
-  border-left:40px solid rgba(255,255,255,.95);
-  margin-left:10px;
-  filter:
-    drop-shadow(0 4px 0 rgba(0,0,0,.18))
-    drop-shadow(0 0 10px rgba(255,255,255,.10));
+@keyframes blinkAnim{
+  0%   { transform: scaleY(1); }
+  50%  { transform: scaleY(0.08); }
+  100% { transform: scaleY(1); }
 }
 
 /* =========================
@@ -309,58 +259,11 @@ body{
 }
 
 /* =========================
-   ŒIL MYSTIQUE (UI)
-   - nécessite: .eyeWrap, .eyeBase, .eyeIris dans ton HTML
-========================= */
-.eyeWrap{
-  position:absolute;
-  right:24px;
-  top:110px;
-  width:220px;
-  height:170px;
-  pointer-events:none;
-  filter: drop-shadow(0 18px 30px rgba(0,0,0,.35));
-}
-
-.eyeBase{
-  width:100%;
-  height:100%;
-  object-fit:contain;
-  display:block;
-}
-
-/* Iris (petit cercle sombre) */
-.eyeIris{
-  position:absolute;
-  width:24px;
-  height:24px;
-  border-radius:999px;
-  background: rgba(50,35,22,.55);
-  left:50%;
-  top:56%;
-  transform: translate(-50%,-50%);
-  filter: blur(.6px);
-  transition: transform .12s ease-out;
-  mix-blend-mode: multiply;
-}
-
-/* Clignement */
-.eyeWrap.blink{
-  transform-origin: 50% 50%;
-  animation: blinkAnim 140ms ease-in-out 0s 1;
-}
-
-@keyframes blinkAnim{
-  0%   { transform: scaleY(1); }
-  50%  { transform: scaleY(0.08); }
-  100% { transform: scaleY(1); }
-}
-
-/* =========================
    ACCESSIBILITÉ
 ========================= */
 @media (prefers-reduced-motion: reduce){
   *{
     transition:none !important;
+    animation:none !important;
   }
 }
