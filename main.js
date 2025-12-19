@@ -1,4 +1,4 @@
-const KEY = "tdclash_save_v1";
+const KEY = "tdpolitaria_save_v1";
 
 /* =========================
    SAVE SYSTEM
@@ -26,7 +26,9 @@ function defaultSave() {
 }
 
 function mount(html) {
-  document.getElementById("app").innerHTML = html;
+  const app = document.getElementById("app");
+  if (!app) return;
+  app.innerHTML = html;
 }
 
 function escapeHtml(str) {
@@ -45,13 +47,13 @@ function homeMenuUI(save) {
   const lang = save.settings.language || "fr";
   const t = i18n(lang);
 
+  // ton œil (chemin exact)
   const eyeSrc = encodeURI(
     "./images/main/20251219_1614_Mystical Stone Eye_simple_compose_01kcvjsfygeqw9jx9smt6fk25j.png"
   );
 
   mount(`
     <div class="home">
-
       <div class="topbar">
         <div class="logo">
           <div class="logo-top">${t.titleTop}</div>
@@ -62,9 +64,10 @@ function homeMenuUI(save) {
       </div>
 
       <div class="center">
+        <!-- L’ŒIL REMPLACE LE BOUCLIER -->
         <button id="btnPlay" class="eyeBtn" aria-label="${t.play}">
-          <div class="eyeWrap centerEye" id="eyeWrap">
-            <img src="${eyeSrc}" class="eyeBase" alt="Mystical stone eye">
+          <div class="eyeWrap" id="eyeWrap" aria-hidden="true">
+            <img src="${eyeSrc}" class="eyeBase" alt="">
             <div class="eyeIris" id="eyeIris"></div>
           </div>
         </button>
@@ -82,7 +85,7 @@ function homeMenuUI(save) {
     </div>
   `);
 
-  injectHomeCssOnce();
+  // Setup eye animations
   setupEyeFollow();
   setupEyeBlink();
 
@@ -124,7 +127,7 @@ function homeMenuUI(save) {
 }
 
 /* =========================
-   EYE FOLLOW (SMOOTH)
+   EYE FOLLOW (SMOOTH, NO DUPLICATE)
 ========================= */
 let _eyeBound = false;
 
@@ -133,37 +136,57 @@ function setupEyeFollow() {
   const iris = document.getElementById("eyeIris");
   if (!eye || !iris) return;
 
+  // on garde les refs à jour après chaque re-render
   window._eyeRefs = { eye, iris };
+
   if (_eyeBound) return;
   _eyeBound = true;
 
   const MAX = 7;
   const SMOOTH = 0.15;
-  let tx = 0, ty = 0, x = 0, y = 0, raf = 0;
+
+  let tx = 0, ty = 0;
+  let x = 0, y = 0;
+  let raf = 0;
 
   function tick() {
     raf = 0;
-    const r = window._eyeRefs;
-    if (!r) return;
+    const refs = window._eyeRefs;
+    if (!refs || !refs.iris) return;
+
     x += (tx - x) * SMOOTH;
     y += (ty - y) * SMOOTH;
-    r.iris.style.transform =
+
+    refs.iris.style.transform =
       `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
   }
 
-  function move(e) {
-    const r = window._eyeRefs.eye.getBoundingClientRect();
-    const dx = e.clientX - (r.left + r.width / 2);
-    const dy = e.clientY - (r.top + r.height / 2);
-    const a = Math.atan2(dy, dx);
-    tx = Math.cos(a) * MAX;
-    ty = Math.sin(a) * MAX;
+  function requestTick() {
     if (!raf) raf = requestAnimationFrame(tick);
   }
 
+  function move(e) {
+    const refs = window._eyeRefs;
+    if (!refs || !refs.eye) return;
+
+    const r = refs.eye.getBoundingClientRect();
+    const cx = r.left + r.width / 2;
+    const cy = r.top + r.height / 2;
+
+    const dx = e.clientX - cx;
+    const dy = e.clientY - cy;
+
+    const a = Math.atan2(dy, dx);
+    tx = Math.cos(a) * MAX;
+    ty = Math.sin(a) * MAX;
+
+    requestTick();
+  }
+
   function reset() {
-    tx = 0; ty = 0;
-    if (!raf) raf = requestAnimationFrame(tick);
+    tx = 0;
+    ty = 0;
+    requestTick();
   }
 
   window.addEventListener("mousemove", move, { passive: true });
@@ -183,7 +206,7 @@ function setupEyeBlink() {
   function loop() {
     window._blinkT = setTimeout(() => {
       eye.classList.remove("blink");
-      void eye.offsetWidth;
+      void eye.offsetWidth; // reflow
       eye.classList.add("blink");
       loop();
     }, 6000 + Math.random() * 5000);
@@ -287,7 +310,10 @@ function toast(text) {
       color:"#fff",
       zIndex:"99",
       opacity:"0",
-      transition:"opacity .15s ease"
+      transition:"opacity .15s ease",
+      maxWidth:"min(560px, 92vw)",
+      textAlign:"center",
+      fontFamily:"system-ui, Arial"
     });
   }
   el.textContent = text;
