@@ -1,93 +1,232 @@
+/* =========================
+   VARIABLES GLOBALES
+========================= */
 :root{
-  --bg:#0f1220;
+  --bg-dark:#0f1220;
   --panel:#12162a;
   --stroke:#2a3156;
   --gold:#FFD54A;
   --btn:#1a2040;
   --btn2:#3a4bb0;
+  --ok:#2da44e;
+  --danger:#8b2d2d;
 }
 
-*{box-sizing:border-box}
-html,body{height:100%;margin:0;font-family:system-ui,Arial;background:var(--bg);color:#fff}
-#app{min-height:100%;display:grid;place-items:center;padding:16px}
+/* =========================
+   RESET + BASE
+========================= */
+*{
+  box-sizing:border-box;
+}
 
+html, body{
+  margin:0;
+  padding:0;
+  min-height:100%;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial;
+  background: var(--bg-dark);
+  color:#fff;
+}
+
+/* =========================
+   FOND PRINCIPAL (IMAGE)
+========================= */
+body{
+  background:
+    /* vignette sombre pour lisibilité UI */
+    radial-gradient(circle at center, rgba(0,0,0,.25) 0%, rgba(0,0,0,.65) 70%),
+    /* image principale */
+    url("./images/main/fondmain.webp") center / cover no-repeat fixed;
+}
+
+/* Mobile : on évite le fixed (perf) */
+@media (max-width: 768px){
+  body{
+    background-attachment: scroll;
+    background-position: center top;
+  }
+}
+
+/* =========================
+   CONTAINER APP
+========================= */
+#app{
+  position:relative;
+  min-height:100vh;
+  display:grid;
+  place-items:center;
+  padding:16px;
+}
+
+/* =========================
+   CARD (PANNEAUX UI)
+========================= */
 .card{
   width:min(560px, 92vw);
-  background:var(--panel);
+  background:
+    linear-gradient(180deg,
+      rgba(18,22,42,.92),
+      rgba(18,22,42,.85)
+    );
   border:1px solid var(--stroke);
-  border-radius:18px;
-  padding:18px;
-  box-shadow:0 12px 40px rgba(0,0,0,.35);
+  border-radius:20px;
+  padding:20px;
+  box-shadow:0 20px 50px rgba(0,0,0,.45);
+  backdrop-filter: blur(6px);
 }
 
+/* =========================
+   TITRES
+========================= */
 .title{
-  margin:0 0 8px 0;
-  font-size:40px;
+  margin:0 0 10px 0;
+  font-size:42px;
   font-weight:900;
   color:var(--gold);
   letter-spacing:1px;
-  text-shadow:0 6px 0 rgba(0,0,0,.35);
+  text-shadow:
+    0 4px 0 rgba(0,0,0,.45),
+    0 10px 25px rgba(0,0,0,.45);
 }
 
-.sub{opacity:.85;margin:0 0 16px 0}
+.sub{
+  margin:0 0 18px 0;
+  font-size:15px;
+  opacity:.85;
+}
 
+/* =========================
+   LAYOUT
+========================= */
 .grid{
   display:grid;
   grid-template-columns: 1fr 1fr;
-  gap:12px;
+  gap:14px;
 }
 
-label{font-size:13px;opacity:.85}
-input{
-  width:100%;
-  padding:10px 12px;
-  border-radius:12px;
-  border:1px solid var(--stroke);
-  background:#0b0e1a;
-  color:#fff;
-  outline:none;
+@media (max-width: 520px){
+  .grid{
+    grid-template-columns: 1fr;
+  }
 }
 
 .row{
   display:flex;
-  gap:10px;
   align-items:center;
+  gap:10px;
   flex-wrap:wrap;
 }
 
+/* =========================
+   FORMULAIRES
+========================= */
+label{
+  display:block;
+  font-size:13px;
+  margin-bottom:6px;
+  opacity:.85;
+}
+
+input{
+  width:100%;
+  padding:11px 13px;
+  border-radius:12px;
+  border:1px solid var(--stroke);
+  background:#0b0e1a;
+  color:#fff;
+  font-size:15px;
+  outline:none;
+}
+
+input::placeholder{
+  color:#ffffff55;
+}
+
+/* =========================
+   PILLS / BOUTONS RONDS
+========================= */
 .pill{
   border:1px solid var(--stroke);
   background:var(--btn);
-  padding:8px 12px;
+  padding:9px 14px;
   border-radius:999px;
   cursor:pointer;
   user-select:none;
-  font-weight:700;
+  font-weight:800;
   font-size:13px;
-  opacity:.95;
+  transition: transform .08s ease, background .12s ease;
 }
-.pill.active{background:var(--btn2)}
-.pill.danger{background:#8b2d2d}
-.pill.ok{background:#2da44e}
 
+.pill:hover{
+  transform:translateY(-1px);
+}
+
+.pill.active{
+  background:var(--btn2);
+}
+
+.pill.ok{
+  background:var(--ok);
+}
+
+.pill.danger{
+  background:var(--danger);
+}
+
+/* =========================
+   BOUTON PRINCIPAL
+========================= */
 .btn{
   width:100%;
-  padding:12px 14px;
-  border-radius:14px;
-  border:1px solid rgba(0,0,0,.25);
+  padding:14px 16px;
+  border-radius:16px;
+  border:none;
   background:var(--gold);
   color:#1b1b1b;
   font-weight:900;
   font-size:16px;
   cursor:pointer;
+  box-shadow:
+    inset 0 -3px 0 rgba(0,0,0,.25),
+    0 10px 30px rgba(0,0,0,.35);
+  transition: transform .08s ease, box-shadow .08s ease;
 }
-.btn:active{transform:translateY(1px)}
 
+.btn:hover{
+  transform:translateY(-1px);
+}
+
+.btn:active{
+  transform:translateY(1px);
+  box-shadow:
+    inset 0 -1px 0 rgba(0,0,0,.25),
+    0 6px 20px rgba(0,0,0,.35);
+}
+
+/* =========================
+   SÉPARATEUR
+========================= */
+.sep{
+  height:1px;
+  background:linear-gradient(90deg, transparent, var(--stroke), transparent);
+  margin:18px 0;
+  opacity:.8;
+}
+
+/* =========================
+   TEXTE AIDE
+========================= */
 .small{
   margin-top:10px;
   font-size:12px;
   opacity:.8;
 }
 
-.sep{height:1px;background:var(--stroke);opacity:.7;margin:14px 0}
-
+/* =========================
+   ACCESSIBILITÉ / PERF
+========================= */
+@media (prefers-reduced-motion: reduce){
+  *{
+    transition:none !important;
+  }
+}
