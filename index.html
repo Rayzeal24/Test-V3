@@ -4,10 +4,272 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Tower Defense (Clash-like)</title>
+  <meta name="theme-color" content="#0f1220" />
+
+  <!-- Preload system font feel -->
+  <style>
+    :root{
+      --bg:#0f1220;
+      --panel:#12162a;
+      --stroke:#2a3156;
+      --gold:#FFD54A;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:var(--bg);font-family:system-ui,Segoe UI,Roboto,Arial}
+    body{overflow:hidden}
+    #app{position:relative;z-index:5;min-height:100%;display:grid;place-items:center;padding:16px}
+    canvas{border-radius:14px;box-shadow:0 16px 50px rgba(0,0,0,.40)}
+  </style>
+
+  <!-- Your existing CSS -->
   <link rel="stylesheet" href="./style.css" />
 </head>
+
 <body>
+  <!-- ======= BACKGROUND (Clash-like, no images) ======= -->
+  <div id="bg">
+    <div class="layer sky"></div>
+    <div class="layer rays"></div>
+    <div class="layer clouds"></div>
+    <div class="layer birds"></div>
+    <div class="layer mountains far"></div>
+    <div class="layer mountains mid"></div>
+    <div class="layer hills"></div>
+    <div class="layer forest"></div>
+    <div class="layer path"></div>
+    <div class="layer vignette"></div>
+    <div class="layer grain"></div>
+  </div>
+
+  <!-- UI Mount -->
   <div id="app"></div>
+
+  <!-- App Script -->
   <script src="./main.js"></script>
+
+  <!-- ======= BACKGROUND STYLES (inline for easy copy) ======= -->
+  <style>
+    #bg{
+      position:fixed;
+      inset:0;
+      overflow:hidden;
+      z-index:0;
+      transform: translateZ(0);
+    }
+    .layer{position:absolute;inset:0;will-change:transform}
+
+    /* Sky gradient */
+    .sky{
+      background: linear-gradient(180deg,
+        #ffb86b 0%,
+        #ff8ccf 22%,
+        #8b6bff 52%,
+        #1b1f3a 78%,
+        #0f1220 100%
+      );
+    }
+
+    /* Sun glow */
+    .sky::after{
+      content:"";
+      position:absolute;
+      inset:-20%;
+      background: radial-gradient(circle at 50% 38%,
+        rgba(255,214,74,0.55) 0%,
+        rgba(255,214,74,0.25) 18%,
+        rgba(255,255,255,0.10) 30%,
+        transparent 55%
+      );
+      filter: blur(2px);
+      opacity:.9;
+    }
+
+    /* Rays (subtle) */
+    .rays{
+      background: repeating-conic-gradient(
+        from -8deg at 50% 40%,
+        rgba(255,255,255,0.10) 0deg 10deg,
+        rgba(255,255,255,0.00) 10deg 22deg
+      );
+      mask-image: radial-gradient(circle at 50% 40%, #000 0%, transparent 64%);
+      opacity:.32;
+      transform: scale(1.4);
+    }
+
+    /* Clouds (soft blobs) */
+    .clouds{
+      opacity:.35;
+      background:
+        radial-gradient(circle at 18% 25%, rgba(255,255,255,.55) 0 22%, transparent 23%),
+        radial-gradient(circle at 28% 22%, rgba(255,255,255,.45) 0 18%, transparent 19%),
+        radial-gradient(circle at 33% 27%, rgba(255,255,255,.50) 0 16%, transparent 17%),
+
+        radial-gradient(circle at 70% 20%, rgba(255,255,255,.55) 0 20%, transparent 21%),
+        radial-gradient(circle at 78% 18%, rgba(255,255,255,.45) 0 16%, transparent 17%),
+        radial-gradient(circle at 83% 22%, rgba(255,255,255,.50) 0 14%, transparent 15%),
+
+        radial-gradient(circle at 52% 30%, rgba(255,255,255,.30) 0 18%, transparent 19%),
+        radial-gradient(circle at 60% 29%, rgba(255,255,255,.28) 0 14%, transparent 15%);
+      filter: blur(1px);
+      transform: translateY(-10px);
+    }
+
+    /* Birds (tiny V shapes) */
+    .birds{
+      pointer-events:none;
+      opacity:.45;
+      background:
+        radial-gradient(circle at 16% 28%, rgba(0,0,0,.25) 0 1px, transparent 2px),
+        radial-gradient(circle at 18% 29%, rgba(0,0,0,.25) 0 1px, transparent 2px),
+        radial-gradient(circle at 20% 27%, rgba(0,0,0,.25) 0 1px, transparent 2px),
+
+        radial-gradient(circle at 76% 24%, rgba(0,0,0,.22) 0 1px, transparent 2px),
+        radial-gradient(circle at 78% 25%, rgba(0,0,0,.22) 0 1px, transparent 2px),
+        radial-gradient(circle at 80% 23%, rgba(0,0,0,.22) 0 1px, transparent 2px);
+      mix-blend-mode:multiply;
+    }
+
+    /* Mountains layers */
+    .mountains{
+      top:auto;
+      height:58%;
+      bottom:22%;
+      filter: saturate(1.05);
+    }
+    .mountains.far{
+      opacity:.55;
+      background:
+        radial-gradient(circle at 10% 85%, #4b3aa5 0 45%, transparent 46%),
+        radial-gradient(circle at 30% 86%, #3b2c86 0 52%, transparent 53%),
+        radial-gradient(circle at 55% 88%, #2f236f 0 56%, transparent 57%),
+        radial-gradient(circle at 80% 86%, #3b2c86 0 50%, transparent 51%),
+        radial-gradient(circle at 95% 85%, #4b3aa5 0 42%, transparent 43%);
+    }
+    .mountains.mid{
+      opacity:.85;
+      background:
+        radial-gradient(circle at 8% 88%, #3a2b7a 0 52%, transparent 53%),
+        radial-gradient(circle at 28% 90%, #2a1f66 0 60%, transparent 61%),
+        radial-gradient(circle at 52% 92%, #241b58 0 66%, transparent 67%),
+        radial-gradient(circle at 78% 90%, #2a1f66 0 60%, transparent 61%),
+        radial-gradient(circle at 96% 88%, #3a2b7a 0 52%, transparent 53%);
+    }
+
+    /* Hills (green band) */
+    .hills{
+      top:auto;
+      height:40%;
+      bottom:14%;
+      background:
+        radial-gradient(circle at 5% 70%, #2f7d32 0 55%, transparent 56%),
+        radial-gradient(circle at 28% 75%, #256b2a 0 62%, transparent 63%),
+        radial-gradient(circle at 55% 78%, #2b7430 0 70%, transparent 71%),
+        radial-gradient(circle at 82% 74%, #256b2a 0 62%, transparent 63%),
+        radial-gradient(circle at 100% 70%, #2f7d32 0 55%, transparent 56%);
+      filter: brightness(.92) saturate(1.05);
+    }
+
+    /* Forest line */
+    .forest{
+      top:auto;
+      height:30%;
+      bottom:10%;
+      opacity:.95;
+      background:
+        repeating-linear-gradient(90deg,
+          #1f5f24 0 32px,
+          #1b5220 32px 64px
+        );
+      mask-image: linear-gradient(180deg, transparent 0%, #000 20%, #000 100%);
+      filter: contrast(1.05) brightness(.9);
+    }
+
+    /* Path */
+    .path{
+      top:auto;
+      height:34%;
+      bottom:0;
+      background:
+        radial-gradient(ellipse at 50% 0%,
+          rgba(255,214,74,.20) 0%,
+          transparent 55%
+        ),
+        radial-gradient(ellipse at 50% 60%,
+          #6b4a2b 0 28%,
+          transparent 29%
+        ),
+        radial-gradient(ellipse at 50% 75%,
+          #7a5634 0 34%,
+          transparent 35%
+        ),
+        linear-gradient(180deg, #2c2014 0%, #140f08 100%);
+      mask-image: radial-gradient(ellipse at 50% 20%, #000 0 60%, transparent 70%);
+      opacity:.95;
+    }
+
+    /* Vignette for cinematic focus */
+    .vignette{
+      background: radial-gradient(circle at center,
+        transparent 0%,
+        rgba(0,0,0,0.12) 55%,
+        rgba(0,0,0,0.45) 100%
+      );
+      pointer-events:none;
+    }
+
+    /* Grain (very subtle) */
+    .grain{
+      pointer-events:none;
+      opacity:.10;
+      background-image:
+        repeating-linear-gradient(0deg, rgba(255,255,255,.04) 0 1px, transparent 1px 3px),
+        repeating-linear-gradient(90deg, rgba(0,0,0,.03) 0 1px, transparent 1px 4px);
+      mix-blend-mode: overlay;
+    }
+
+    /* Responsive: keep card readable on small screens */
+    @media (max-width: 520px){
+      #app{padding:12px}
+    }
+
+    /* Prefer reduced motion */
+    @media (prefers-reduced-motion: reduce){
+      .layer{transition:none !important}
+    }
+  </style>
+
+  <!-- ======= BACKGROUND PARALLAX (tiny) ======= -->
+  <script>
+    (function(){
+      const layers = {
+        far: document.querySelector(".mountains.far"),
+        mid: document.querySelector(".mountains.mid"),
+        hills: document.querySelector(".hills"),
+        forest: document.querySelector(".forest"),
+        rays: document.querySelector(".rays"),
+        clouds: document.querySelector(".clouds"),
+      };
+      let raf = 0;
+      let tx = 0, ty = 0;
+
+      function apply(){
+        raf = 0;
+        const x = tx, y = ty;
+        layers.far.style.transform   = `translate(${x*0.20}px, ${y*0.14}px)`;
+        layers.mid.style.transform   = `translate(${x*0.35}px, ${y*0.22}px)`;
+        layers.hills.style.transform = `translate(${x*0.55}px, ${y*0.30}px)`;
+        layers.forest.style.transform= `translate(${x*0.75}px, ${y*0.38}px)`;
+        layers.clouds.style.transform= `translate(${x*0.25}px, ${y*0.12}px)`;
+        layers.rays.style.transform  = `translate(${x*0.10}px, ${y*0.08}px) scale(1.4)`;
+      }
+
+      window.addEventListener("mousemove", (e) => {
+        const cx = (e.clientX / window.innerWidth - 0.5) * 18;
+        const cy = (e.clientY / window.innerHeight - 0.5) * 18;
+        tx = cx; ty = cy;
+        if (!raf) raf = requestAnimationFrame(apply);
+      }, { passive:true });
+    })();
+  </script>
 </body>
 </html>
