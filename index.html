@@ -55,6 +55,23 @@
       overflow:hidden;
     }
 
+    /* ===== SPLASH / LOADING ===== */
+    #splash{
+      position:fixed;
+      inset:0;
+      background:var(--bg);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      z-index:10000;
+    }
+
+    #splash video{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+    }
+
     /* ===== APP ROOT ===== */
     #app{
       position:relative;
@@ -130,6 +147,14 @@
 
 <body>
 
+  <!-- ===== SPLASH VIDEO ===== -->
+  <div id="splash">
+    <video autoplay loop muted playsinline>
+      <source src="./images/main/chargement-politaria.mp4" type="video/mp4">
+    </video>
+  </div>
+
+  <!-- ===== APP ===== -->
   <div id="app">
     <!-- HUD gauche -->
     <div class="hud">
@@ -151,5 +176,18 @@
 
   <!-- Logique jeu -->
   <script src="./main.js"></script>
+
+  <!-- ===== SPLASH REMOVE ===== -->
+  <script>
+    window.addEventListener("load", () => {
+      const splash = document.getElementById("splash");
+      if(splash){
+        splash.style.opacity = "0";
+        splash.style.transition = "opacity .4s ease";
+        setTimeout(() => splash.remove(), 400);
+      }
+    });
+  </script>
+
 </body>
 </html>
