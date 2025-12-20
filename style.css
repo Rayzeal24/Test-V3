@@ -14,7 +14,9 @@
 /* =========================
    RESET
 ========================= */
-*{ box-sizing:border-box; }
+*{
+  box-sizing:border-box;
+}
 
 html, body{
   margin:0;
@@ -36,7 +38,7 @@ body{
       rgba(0,0,0,.15) 0%,
       rgba(0,0,0,.55) 70%
     ),
-    url("./images/main/task_01kcvg1rb3fcevk5d7mnwta9g3_1766154402_img_0.webp");
+    url("./image/main/task_01kcvg1rb3fcevk5d7mnwta9g3_1766154402_img_0.webp");
 
   background-position: center center, center center;
   background-size: cover, cover;
@@ -48,7 +50,9 @@ body{
 
 /* Mobile : pas de fixed (perf) */
 @media (max-width: 768px){
-  body{ background-attachment: scroll, scroll; }
+  body{
+    background-attachment: scroll, scroll;
+  }
 }
 
 /* =========================
@@ -64,7 +68,7 @@ body{
 }
 
 /* =========================
-   HOME MENU LAYOUT (base)
+   HOME MENU LAYOUT
 ========================= */
 .home{
   width:min(760px, 94vw);
@@ -136,7 +140,9 @@ body{
   box-shadow:0 10px 30px rgba(0,0,0,.30);
 }
 
-.iconBtn.off{ opacity:.6; }
+.iconBtn.off{
+  opacity:.6;
+}
 
 /* =========================
    CENTER (EYE PLAY)
@@ -157,10 +163,15 @@ body{
   filter: drop-shadow(0 22px 40px rgba(0,0,0,.30));
 }
 
-.eyeBtn:hover{ transform: translateY(-4px) scale(1.03); }
-.eyeBtn:active{ transform: translateY(-1px) scale(0.99); }
+.eyeBtn:hover{
+  transform: translateY(-4px) scale(1.03);
+}
 
-/* Bloc œil centré */
+.eyeBtn:active{
+  transform: translateY(-1px) scale(0.99);
+}
+
+/* Bloc œil */
 .eyeWrap{
   position:relative;
   width:260px;
@@ -235,7 +246,9 @@ body{
   box-shadow:0 10px 30px rgba(0,0,0,.30);
 }
 
-.smallBtn.danger{ background: rgba(139,45,45,.85); }
+.smallBtn.danger{
+  background: rgba(139,45,45,.85);
+}
 
 /* =========================
    HINT TEXT
@@ -267,9 +280,7 @@ body{
 }
 
 /* =========================================================
-   ✅ MODE TÉLÉPHONE HORIZONTAL (LANDSCAPE)
-   - Layout 2 colonnes
-   - Oeil à droite, logo + boutons à gauche
+   MODE TÉLÉPHONE HORIZONTAL (LANDSCAPE)
 ========================================================= */
 @media (max-width: 900px) and (orientation: landscape){
 
@@ -283,21 +294,16 @@ body{
     height:100vh;
     padding:10px;
 
-    /* grille 2 colonnes */
     display:grid;
     grid-template-columns: 1fr 1.2fr;
     grid-template-rows: auto 1fr auto;
     gap:10px;
-
-    /* on enlève l’ancienne logique flex-col */
     justify-content:unset;
   }
 
-  /* TOPBAR reste en haut, colonne gauche */
   .topbar{
     grid-column:1 / 2;
     grid-row:1;
-    align-items:flex-start;
   }
 
   .logo{
@@ -308,26 +314,22 @@ body{
   .logo-top{ font-size:30px; }
   .logo-bottom{ font-size:22px; letter-spacing:2px; }
 
-  /* bouton son en haut à droite (colonne droite) */
   .iconBtn{
     width:44px;
     height:44px;
     border-radius:14px;
     font-size:18px;
 
-    /* on le positionne visuellement en haut-droit */
     grid-column:2 / 3;
     grid-row:1;
     justify-self:end;
     align-self:start;
   }
 
-  /* centre = colonne droite, grand et centré */
   .center{
     grid-column:2 / 3;
     grid-row:2 / 3;
     place-items:center;
-    min-height:0;
   }
 
   .eyeWrap{
@@ -340,7 +342,6 @@ body{
     height:22px;
   }
 
-  /* bottombar à gauche (sous le logo) */
   .bottombar{
     grid-column:1 / 2;
     grid-row:3;
@@ -355,7 +356,6 @@ body{
     font-size:16px;
   }
 
-  /* hint sous les boutons, colonne gauche */
   .hintLine{
     grid-column:1 / 2;
     grid-row:2 / 3;
@@ -367,9 +367,10 @@ body{
   .hintLine span{
     font-size:12px;
     padding:7px 10px;
-    max-width: 95%;
+    max-width:95%;
   }
 
-  /* évite le hover sur mobile */
-  .eyeBtn:hover{ transform:none; }
+  .eyeBtn:hover{
+    transform:none;
+  }
 }
