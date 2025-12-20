@@ -41,6 +41,16 @@ function escapeHtml(str) {
 }
 
 /* =========================
+   ORIENTATION (LANDSCAPE HELP)
+   -> Ajoute une classe au body: .is-landscape / .is-portrait
+========================= */
+function applyOrientationClass() {
+  const isLandscape = window.innerWidth > window.innerHeight;
+  document.body.classList.toggle("is-landscape", isLandscape);
+  document.body.classList.toggle("is-portrait", !isLandscape);
+}
+
+/* =========================
    HOME MENU (POLITARIA)
 ========================= */
 function homeMenuUI(save) {
@@ -85,6 +95,9 @@ function homeMenuUI(save) {
     </div>
   `);
 
+  // Orientation class (pour layout horizontal téléphone)
+  applyOrientationClass();
+
   // Setup eye animations
   setupEyeFollow();
   setupEyeBlink();
@@ -127,7 +140,9 @@ function homeMenuUI(save) {
 }
 
 /* =========================
-   EYE FOLLOW (SMOOTH, NO DUPLICATE)
+   EYE FOLLOW (MOBILE + DESKTOP)
+   - Pointer events + Touch
+   - No duplicate bindings
 ========================= */
 let _eyeBound = false;
 
@@ -136,7 +151,7 @@ function setupEyeFollow() {
   const iris = document.getElementById("eyeIris");
   if (!eye || !iris) return;
 
-  // on garde les refs à jour après chaque re-render
+  // refs à jour après chaque re-render
   window._eyeRefs = { eye, iris };
 
   if (_eyeBound) return;
@@ -165,16 +180,28 @@ function setupEyeFollow() {
     if (!raf) raf = requestAnimationFrame(tick);
   }
 
+  function getPoint(e) {
+    // TouchEvent
+    if (e && e.touches && e.touches[0]) {
+      return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    }
+    // PointerEvent / MouseEvent
+    return { x: e.clientX, y: e.clientY };
+  }
+
   function move(e) {
     const refs = window._eyeRefs;
     if (!refs || !refs.eye) return;
+
+    const p = getPoint(e);
+    if (p.x == null || p.y == null) return;
 
     const r = refs.eye.getBoundingClientRect();
     const cx = r.left + r.width / 2;
     const cy = r.top + r.height / 2;
 
-    const dx = e.clientX - cx;
-    const dy = e.clientY - cy;
+    const dx = p.x - cx;
+    const dy = p.y - cy;
 
     const a = Math.atan2(dy, dx);
     tx = Math.cos(a) * MAX;
@@ -189,9 +216,27 @@ function setupEyeFollow() {
     requestTick();
   }
 
-  window.addEventListener("mousemove", move, { passive: true });
+  // Desktop + Mobile (pointer)
+  window.addEventListener("pointermove", move, { passive: true });
+
+  // Fallback vieux iOS (au cas où)
+  window.addEventListener("touchmove", move, { passive: true });
+
+  // Reset
   window.addEventListener("blur", reset);
   document.addEventListener("mouseleave", reset);
+  window.addEventListener("pointerleave", reset);
+
+  // Orientation / resize => reset + update class
+  window.addEventListener("resize", () => {
+    applyOrientationClass();
+    reset();
+  }, { passive: true });
+
+  window.addEventListener("orientationchange", () => {
+    applyOrientationClass();
+    reset();
+  }, { passive: true });
 }
 
 /* =========================
@@ -229,6 +274,8 @@ function firstLaunchUI(save) {
     </div>
   `);
 
+  applyOrientationClass();
+
   document.getElementById("start").onclick = () => {
     save.firstLaunchDone = true;
     saveGame(save);
@@ -248,6 +295,8 @@ function menuUI(save) {
       <button id="home" class="btn">${t.home}</button>
     </div>
   `);
+
+  applyOrientationClass();
 
   document.getElementById("home").onclick = () => homeMenuUI(save);
 }
@@ -331,6 +380,7 @@ function boot() {
     save = defaultSave();
     saveGame(save);
   }
+  applyOrientationClass();
   homeMenuUI(save);
 }
 
