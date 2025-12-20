@@ -64,7 +64,7 @@ body{
 }
 
 /* =========================
-   HOME MENU LAYOUT
+   HOME MENU LAYOUT (base)
 ========================= */
 .home{
   width:min(760px, 94vw);
@@ -165,7 +165,7 @@ body{
   position:relative;
   width:260px;
   height:220px;
-  pointer-events:none; /* c’est le bouton qui clique */
+  pointer-events:none;
 }
 
 .eyeBase{
@@ -176,7 +176,7 @@ body{
 }
 
 /* =========================
-   IRIS (amélioré: effet "lentille")
+   IRIS
 ========================= */
 .eyeIris{
   position:absolute;
@@ -184,7 +184,6 @@ body{
   height:26px;
   border-radius:999px;
 
-  /* effet lentille + profondeur */
   background:
     radial-gradient(circle at 35% 35%, rgba(255,255,255,.25) 0 26%, transparent 27%),
     radial-gradient(circle at 62% 62%, rgba(0,0,0,.18) 0 52%, transparent 53%),
@@ -265,4 +264,112 @@ body{
     transition:none !important;
     animation:none !important;
   }
+}
+
+/* =========================================================
+   ✅ MODE TÉLÉPHONE HORIZONTAL (LANDSCAPE)
+   - Layout 2 colonnes
+   - Oeil à droite, logo + boutons à gauche
+========================================================= */
+@media (max-width: 900px) and (orientation: landscape){
+
+  #app{
+    padding:10px;
+    place-items:stretch;
+  }
+
+  .home{
+    width:100%;
+    height:100vh;
+    padding:10px;
+
+    /* grille 2 colonnes */
+    display:grid;
+    grid-template-columns: 1fr 1.2fr;
+    grid-template-rows: auto 1fr auto;
+    gap:10px;
+
+    /* on enlève l’ancienne logique flex-col */
+    justify-content:unset;
+  }
+
+  /* TOPBAR reste en haut, colonne gauche */
+  .topbar{
+    grid-column:1 / 2;
+    grid-row:1;
+    align-items:flex-start;
+  }
+
+  .logo{
+    padding:10px 12px;
+    border-radius:14px;
+  }
+
+  .logo-top{ font-size:30px; }
+  .logo-bottom{ font-size:22px; letter-spacing:2px; }
+
+  /* bouton son en haut à droite (colonne droite) */
+  .iconBtn{
+    width:44px;
+    height:44px;
+    border-radius:14px;
+    font-size:18px;
+
+    /* on le positionne visuellement en haut-droit */
+    grid-column:2 / 3;
+    grid-row:1;
+    justify-self:end;
+    align-self:start;
+  }
+
+  /* centre = colonne droite, grand et centré */
+  .center{
+    grid-column:2 / 3;
+    grid-row:2 / 3;
+    place-items:center;
+    min-height:0;
+  }
+
+  .eyeWrap{
+    width:min(42vh, 260px);
+    height:min(36vh, 220px);
+  }
+
+  .eyeIris{
+    width:22px;
+    height:22px;
+  }
+
+  /* bottombar à gauche (sous le logo) */
+  .bottombar{
+    grid-column:1 / 2;
+    grid-row:3;
+    justify-content:flex-start;
+    gap:10px;
+  }
+
+  .smallBtn{
+    width:48px;
+    height:48px;
+    border-radius:14px;
+    font-size:16px;
+  }
+
+  /* hint sous les boutons, colonne gauche */
+  .hintLine{
+    grid-column:1 / 2;
+    grid-row:2 / 3;
+    justify-content:flex-start;
+    align-items:flex-end;
+    margin-top:0;
+  }
+
+  .hintLine span{
+    font-size:12px;
+    padding:7px 10px;
+    max-width: 95%;
+  }
+
+  /* évite le hover sur mobile */
+  .eyeBtn:hover{ transform:none; }
 }
