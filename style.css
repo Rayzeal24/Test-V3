@@ -1,50 +1,292 @@
-/* =========================================================
-   MODE TÉLÉPHONE HORIZONTAL (LANDSCAPE)
-   - Logo sans cadre (texte seul)
-   - Logo centré
-   - Bouton ⚙️ reste à droite
-========================================================= */
+/* =========================
+   VARIABLES
+========================= */
+:root{
+  --bg-dark:#0f1220;
+  --panel:#12162a;
+  --stroke:#2a3156;
+  --gold:#FFD54A;
+
+  --ok:#2da44e;
+  --danger:#8b2d2d;
+}
+
+/* =========================
+   RESET
+========================= */
+*{
+  box-sizing:border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body{
+  margin:0;
+  padding:0;
+  width:100%;
+  height:100%;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial;
+  color:#fff;
+}
+
+/* =========================
+   FOND PRINCIPAL
+========================= */
+body{
+  background-color: var(--bg-dark);
+
+  background-image:
+    radial-gradient(circle at center,
+      rgba(0,0,0,.15) 0%,
+      rgba(0,0,0,.55) 70%
+    ),
+    url("./images/main/task_01kcvg1rb3fcevk5d7mnwta9g3_1766154402_img_0.webp");
+
+  background-position: center center, center center;
+  background-size: cover, cover;
+  background-repeat: no-repeat, no-repeat;
+  background-attachment: fixed, fixed;
+
+  overflow:hidden;
+}
+
+/* Mobile perf */
+@media (max-width: 768px){
+  body{ background-attachment: scroll, scroll; }
+}
+
+/* =========================
+   APP ROOT
+========================= */
+#app{
+  position:relative;
+  min-height:100vh;
+  display:grid;
+  place-items:center;
+  padding:16px;
+}
+
+/* =========================
+   HOME MENU
+========================= */
+.home{
+  width:min(760px, 94vw);
+  height:min(520px, 78vh);
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  padding:12px;
+}
+
+/* =========================
+   TOP BAR
+========================= */
+.topbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+}
+
+/* =========================
+   LOGO (DESKTOP)
+========================= */
+.logo{
+  padding:14px 18px;
+  border-radius:18px;
+  background:
+    linear-gradient(180deg,
+      rgba(18,22,42,.85),
+      rgba(18,22,42,.55)
+    );
+  border:1px solid rgba(255,255,255,.12);
+  backdrop-filter: blur(6px);
+  box-shadow:0 14px 40px rgba(0,0,0,.35);
+}
+
+.logo-top{
+  font-size:44px;
+  font-weight:900;
+  letter-spacing:1px;
+  color:var(--gold);
+  text-shadow:
+    0 4px 0 rgba(0,0,0,.45),
+    0 10px 25px rgba(0,0,0,.45);
+  line-height:1;
+}
+
+.logo-bottom{
+  font-size:34px;
+  font-weight:900;
+  letter-spacing:3px;
+  color:#fff;
+  opacity:.95;
+}
+
+/* =========================
+   ICON BUTTON (⚙️)
+========================= */
+.iconBtn{
+  width:54px;
+  height:54px;
+  border-radius:16px;
+  border:1px solid rgba(255,255,255,.16);
+  background: rgba(18,22,42,.65);
+  color:#fff;
+  font-size:22px;
+  cursor:pointer;
+  backdrop-filter: blur(6px);
+  box-shadow:0 10px 30px rgba(0,0,0,.30);
+}
+
+/* =========================
+   CENTER (EYE)
+========================= */
+.center{
+  flex:1;
+  display:grid;
+  place-items:center;
+}
+
+.eyeBtn{
+  border:none;
+  background:transparent;
+  cursor:pointer;
+  padding:0;
+  transition: transform .12s ease;
+  filter: drop-shadow(0 22px 40px rgba(0,0,0,.30));
+}
+
+.eyeBtn:hover{ transform: translateY(-4px) scale(1.03); }
+.eyeBtn:active{ transform: translateY(-1px) scale(0.99); }
+
+.eyeWrap{
+  position:relative;
+  width:260px;
+  height:220px;
+  pointer-events:none;
+}
+
+.eyeBase{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+}
+
+/* =========================
+   IRIS
+========================= */
+.eyeIris{
+  position:absolute;
+  width:26px;
+  height:26px;
+  border-radius:999px;
+  background:
+    radial-gradient(circle at 35% 35%, rgba(255,255,255,.25) 0 26%, transparent 27%),
+    radial-gradient(circle at 62% 62%, rgba(0,0,0,.18) 0 52%, transparent 53%),
+    rgba(50,35,22,.55);
+  box-shadow:
+    inset 0 6px 10px rgba(0,0,0,.25),
+    0 2px 6px rgba(0,0,0,.18);
+  left:50%;
+  top:56%;
+  transform: translate(-50%,-50%);
+  filter: blur(.35px);
+  mix-blend-mode: multiply;
+}
+
+/* Blink */
+.eyeWrap.blink{
+  animation: blinkAnim 140ms ease-in-out;
+}
+@keyframes blinkAnim{
+  0%{ transform: scaleY(1); }
+  50%{ transform: scaleY(0.08); }
+  100%{ transform: scaleY(1); }
+}
+
+/* =========================
+   SETTINGS MODAL
+========================= */
+.modal-backdrop{
+  position:fixed;
+  inset:0;
+  background: rgba(0,0,0,.45);
+  z-index:9998;
+}
+
+.modal{
+  position:fixed;
+  top:84px;
+  right:18px;
+  width:min(320px, calc(100vw - 24px));
+  background: rgba(18,22,42,.88);
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:16px;
+  box-shadow:0 18px 60px rgba(0,0,0,.55);
+  backdrop-filter: blur(8px);
+  z-index:9999;
+  padding:12px;
+}
+
+.modal h3{
+  margin:0 0 10px;
+  font-size:14px;
+}
+
+.modal-row{
+  display:flex;
+  justify-content:space-between;
+  padding:10px;
+  border-radius:12px;
+  background: rgba(0,0,0,.15);
+  margin-bottom:10px;
+}
+
+.switch{
+  appearance:none;
+  width:44px;
+  height:26px;
+  border-radius:999px;
+  background: rgba(255,255,255,.18);
+  position:relative;
+}
+.switch::after{
+  content:"";
+  position:absolute;
+  width:18px;
+  height:18px;
+  background:#fff;
+  border-radius:999px;
+  top:3px;
+  left:3px;
+  transition:.15s;
+}
+.switch:checked{
+  background: rgba(45,164,78,.45);
+}
+.switch:checked::after{
+  transform: translateX(18px);
+}
+
+/* =========================
+   MOBILE LANDSCAPE
+========================= */
 @media (max-width: 900px) and (orientation: landscape){
 
-  #app{
-    padding:10px;
-    place-items:stretch;
-  }
-
-  .home{
-    width:100%;
-    height:100vh;
-    padding:10px;
-
-    display:grid;
-    grid-template-columns: 1fr 1.2fr;
-    grid-template-rows: auto 1fr auto;
-    gap:10px;
-    justify-content:unset;
-  }
-
-  /* ✅ Topbar en grid :
-     - Colonne 1 : logo centré
-     - Colonne 2 : bouton ⚙️ à droite */
   .topbar{
-    grid-column:1 / 3;
-    grid-row:1;
     display:grid;
     grid-template-columns: 1fr auto;
     align-items:center;
   }
 
-  /* ✅ Logo : texte seul, sans fond/contour */
+  /* LOGO TEXTE SEUL + CENTRÉ */
   .logo{
     justify-self:center;
     text-align:center;
-
     padding:0;
     border:none;
     background:transparent;
     backdrop-filter:none;
     box-shadow:none;
-    border-radius:0;
   }
 
   .logo-top{
@@ -58,40 +300,20 @@
     text-align:center;
   }
 
-  /* ⚙️ bouton paramètres à droite */
   .iconBtn{
     width:44px;
     height:44px;
-    border-radius:14px;
     font-size:18px;
-
     justify-self:end;
-    align-self:center;
   }
+}
 
-  .center{
-    grid-column:2 / 3;
-    grid-row:2 / 3;
-    place-items:center;
-  }
-
-  .eyeWrap{
-    width:min(42vh, 260px);
-    height:min(36vh, 220px);
-  }
-
-  .eyeIris{
-    width:22px;
-    height:22px;
-  }
-
-  .eyeBtn:hover{
-    transform:none;
-  }
-
-  /* Modal mieux placée en mobile */
-  .modal{
-    top:64px;
-    right:12px;
+/* =========================
+   ACCESSIBILITÉ
+========================= */
+@media (prefers-reduced-motion: reduce){
+  *{
+    animation:none !important;
+    transition:none !important;
   }
 }
