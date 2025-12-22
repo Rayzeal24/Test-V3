@@ -20,7 +20,11 @@ function defaultSave() {
   return {
     firstLaunchDone: false,
     player: { name: "" },
-    settings: { language: "fr", sound: true },
+    settings: {
+      language: "fr",
+      sound: true,
+      music: true
+    },
     progress: { levelUnlocked: 1, stars: {} }
   };
 }
@@ -31,18 +35,8 @@ function mount(html) {
   app.innerHTML = html;
 }
 
-function escapeHtml(str) {
-  return String(str)
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#039;");
-}
-
 /* =========================
-   ORIENTATION (LANDSCAPE HELP)
-   -> Ajoute une classe au body: .is-landscape / .is-portrait
+   ORIENTATION
 ========================= */
 function applyOrientationClass() {
   const isLandscape = window.innerWidth > window.innerHeight;
@@ -51,13 +45,12 @@ function applyOrientationClass() {
 }
 
 /* =========================
-   HOME MENU (POLITARIA)
+   HOME MENU
 ========================= */
 function homeMenuUI(save) {
   const lang = save.settings.language || "fr";
   const t = i18n(lang);
 
-  // ton œil (chemin exact)
   const eyeSrc = encodeURI(
     "./images/main/20251219_1614_Mystical Stone Eye_simple_compose_01kcvjsfygeqw9jx9smt6fk25j.png"
   );
@@ -70,69 +63,25 @@ function homeMenuUI(save) {
           <div class="logo-bottom">${t.titleBottom}</div>
         </div>
 
-        <button id="btnAudio" class="iconBtn" title="${t.audio}">♪</button>
+        <button id="btnSettings" class="iconBtn" title="${t.settings}">⚙️</button>
       </div>
 
       <div class="center">
-        <!-- L’ŒIL REMPLACE LE BOUCLIER -->
         <button id="btnPlay" class="eyeBtn" aria-label="${t.play}">
           <div class="eyeWrap" id="eyeWrap" aria-hidden="true">
             <img src="${eyeSrc}" class="eyeBase" alt="">
-            <div class="eyeIris" id="eyeIris"></div>
+            <div class="eyeIris"></div>
           </div>
         </button>
-      </div>
-
-      <div class="bottombar">
-        <button id="btnHelp" class="smallBtn">?</button>
-        <button id="btnLang" class="smallBtn">${lang.toUpperCase()}</button>
-        <button id="btnReset" class="smallBtn danger">⟲</button>
-      </div>
-
-      <div class="hintLine">
-        <span>${t.hint.replace("{name}", escapeHtml(save.player.name || t.guest))}</span>
       </div>
     </div>
   `);
 
-  // Orientation class (pour layout horizontal téléphone)
   applyOrientationClass();
-
-  // Setup eye animations
-  setupEyeFollow();
   setupEyeBlink();
 
-  /* ===== Audio ===== */
-  const btnAudio = document.getElementById("btnAudio");
-  const setAudioUI = () => {
-    btnAudio.classList.toggle("off", !save.settings.sound);
-    btnAudio.textContent = save.settings.sound ? "♪" : "🔇";
-  };
-  setAudioUI();
+  document.getElementById("btnSettings").onclick = () => openSettings(save);
 
-  btnAudio.onclick = () => {
-    save.settings.sound = !save.settings.sound;
-    saveGame(save);
-    setAudioUI();
-  };
-
-  /* ===== Help ===== */
-  document.getElementById("btnHelp").onclick = () => toast(t.helpText);
-
-  /* ===== Lang ===== */
-  document.getElementById("btnLang").onclick = () => {
-    save.settings.language = save.settings.language === "fr" ? "en" : "fr";
-    saveGame(save);
-    homeMenuUI(save);
-  };
-
-  /* ===== Reset ===== */
-  document.getElementById("btnReset").onclick = () => {
-    localStorage.removeItem(KEY);
-    boot();
-  };
-
-  /* ===== Play ===== */
   document.getElementById("btnPlay").onclick = () => {
     if (!save.firstLaunchDone) firstLaunchUI(save);
     else menuUI(save);
@@ -140,107 +89,7 @@ function homeMenuUI(save) {
 }
 
 /* =========================
-   EYE FOLLOW (MOBILE + DESKTOP)
-   - Pointer events + Touch
-   - No duplicate bindings
-========================= */
-let _eyeBound = false;
-
-function setupEyeFollow() {
-  const eye = document.getElementById("eyeWrap");
-  const iris = document.getElementById("eyeIris");
-  if (!eye || !iris) return;
-
-  // refs à jour après chaque re-render
-  window._eyeRefs = { eye, iris };
-
-  if (_eyeBound) return;
-  _eyeBound = true;
-
-  const MAX = 7;
-  const SMOOTH = 0.15;
-
-  let tx = 0, ty = 0;
-  let x = 0, y = 0;
-  let raf = 0;
-
-  function tick() {
-    raf = 0;
-    const refs = window._eyeRefs;
-    if (!refs || !refs.iris) return;
-
-    x += (tx - x) * SMOOTH;
-    y += (ty - y) * SMOOTH;
-
-    refs.iris.style.transform =
-      `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
-  }
-
-  function requestTick() {
-    if (!raf) raf = requestAnimationFrame(tick);
-  }
-
-  function getPoint(e) {
-    // TouchEvent
-    if (e && e.touches && e.touches[0]) {
-      return { x: e.touches[0].clientX, y: e.touches[0].clientY };
-    }
-    // PointerEvent / MouseEvent
-    return { x: e.clientX, y: e.clientY };
-  }
-
-  function move(e) {
-    const refs = window._eyeRefs;
-    if (!refs || !refs.eye) return;
-
-    const p = getPoint(e);
-    if (p.x == null || p.y == null) return;
-
-    const r = refs.eye.getBoundingClientRect();
-    const cx = r.left + r.width / 2;
-    const cy = r.top + r.height / 2;
-
-    const dx = p.x - cx;
-    const dy = p.y - cy;
-
-    const a = Math.atan2(dy, dx);
-    tx = Math.cos(a) * MAX;
-    ty = Math.sin(a) * MAX;
-
-    requestTick();
-  }
-
-  function reset() {
-    tx = 0;
-    ty = 0;
-    requestTick();
-  }
-
-  // Desktop + Mobile (pointer)
-  window.addEventListener("pointermove", move, { passive: true });
-
-  // Fallback vieux iOS (au cas où)
-  window.addEventListener("touchmove", move, { passive: true });
-
-  // Reset
-  window.addEventListener("blur", reset);
-  document.addEventListener("mouseleave", reset);
-  window.addEventListener("pointerleave", reset);
-
-  // Orientation / resize => reset + update class
-  window.addEventListener("resize", () => {
-    applyOrientationClass();
-    reset();
-  }, { passive: true });
-
-  window.addEventListener("orientationchange", () => {
-    applyOrientationClass();
-    reset();
-  }, { passive: true });
-}
-
-/* =========================
-   EYE BLINK
+   EYE BLINK ONLY
 ========================= */
 function setupEyeBlink() {
   const eye = document.getElementById("eyeWrap");
@@ -251,13 +100,86 @@ function setupEyeBlink() {
   function loop() {
     window._blinkT = setTimeout(() => {
       eye.classList.remove("blink");
-      void eye.offsetWidth; // reflow
+      void eye.offsetWidth;
       eye.classList.add("blink");
       loop();
     }, 6000 + Math.random() * 5000);
   }
-
   loop();
+}
+
+/* =========================
+   SETTINGS MODAL
+========================= */
+function closeSettings() {
+  document.getElementById("settingsBackdrop")?.remove();
+  document.getElementById("settingsModal")?.remove();
+}
+
+function openSettings(save) {
+  closeSettings();
+  const t = i18n(save.settings.language);
+
+  const backdrop = document.createElement("div");
+  backdrop.id = "settingsBackdrop";
+  backdrop.className = "modal-backdrop";
+  backdrop.onclick = closeSettings;
+
+  const modal = document.createElement("div");
+  modal.id = "settingsModal";
+  modal.className = "modal";
+  modal.innerHTML = `
+    <h3>${t.settings}</h3>
+
+    <div class="modal-row">
+      <label>${t.music}</label>
+      <input class="switch" type="checkbox" ${save.settings.music ? "checked" : ""} id="swMusic">
+    </div>
+
+    <div class="modal-row">
+      <label>${t.sound}</label>
+      <input class="switch" type="checkbox" ${save.settings.sound ? "checked" : ""} id="swSound">
+    </div>
+
+    <div class="modal-row">
+      <label>${t.language}</label>
+      <button id="btnLang" class="modalBtn">${save.settings.language.toUpperCase()}</button>
+    </div>
+
+    <div class="modal-actions">
+      <button id="btnReset" class="modalBtn danger">${t.reset}</button>
+      <button id="btnClose" class="modalBtn">${t.close}</button>
+    </div>
+  `;
+
+  document.body.appendChild(backdrop);
+  document.body.appendChild(modal);
+  modal.onclick = e => e.stopPropagation();
+
+  modal.querySelector("#btnClose").onclick = closeSettings;
+
+  modal.querySelector("#swMusic").onchange = e => {
+    save.settings.music = e.target.checked;
+    saveGame(save);
+  };
+
+  modal.querySelector("#swSound").onchange = e => {
+    save.settings.sound = e.target.checked;
+    saveGame(save);
+  };
+
+  modal.querySelector("#btnLang").onclick = () => {
+    save.settings.language = save.settings.language === "fr" ? "en" : "fr";
+    saveGame(save);
+    closeSettings();
+    homeMenuUI(save);
+  };
+
+  modal.querySelector("#btnReset").onclick = () => {
+    localStorage.removeItem(KEY);
+    closeSettings();
+    boot();
+  };
 }
 
 /* =========================
@@ -273,8 +195,6 @@ function firstLaunchUI(save) {
       <button id="start" class="btn">${t.start}</button>
     </div>
   `);
-
-  applyOrientationClass();
 
   document.getElementById("start").onclick = () => {
     save.firstLaunchDone = true;
@@ -296,8 +216,6 @@ function menuUI(save) {
     </div>
   `);
 
-  applyOrientationClass();
-
   document.getElementById("home").onclick = () => homeMenuUI(save);
 }
 
@@ -308,14 +226,16 @@ function i18n(lang) {
   const fr = {
     titleTop: "TOWER DEFENSE",
     titleBottom: "POLITARIA",
-    audio: "Son",
     play: "Jouer",
-    hint: "Appuie sur l’œil — {name}, prêt à défendre ?",
-    helpText: "Clique sur l’œil pour commencer.",
+    settings: "Paramètres",
+    music: "Musique",
+    sound: "Sons",
+    language: "Langue",
+    reset: "Réinitialiser",
+    close: "Fermer",
     welcome: "Bienvenue !",
     welcomeSub: "Configuration initiale.",
     start: "Commencer",
-    guest: "Invité",
     menu: "Menu",
     home: "Accueil"
   };
@@ -323,52 +243,21 @@ function i18n(lang) {
   const en = {
     titleTop: "TOWER DEFENSE",
     titleBottom: "POLITARIA",
-    audio: "Audio",
     play: "Play",
-    hint: "Click the eye — {name}, ready?",
-    helpText: "Click the eye to start.",
+    settings: "Settings",
+    music: "Music",
+    sound: "Sound",
+    language: "Language",
+    reset: "Reset",
+    close: "Close",
     welcome: "Welcome!",
     welcomeSub: "Initial setup.",
     start: "Start",
-    guest: "Guest",
     menu: "Menu",
     home: "Home"
   };
 
   return lang === "en" ? en : fr;
-}
-
-/* =========================
-   TOAST
-========================= */
-function toast(text) {
-  let el = document.getElementById("toast");
-  if (!el) {
-    el = document.createElement("div");
-    el.id = "toast";
-    document.body.appendChild(el);
-    Object.assign(el.style,{
-      position:"fixed",
-      left:"50%",
-      bottom:"26px",
-      transform:"translateX(-50%)",
-      background:"rgba(0,0,0,.55)",
-      border:"1px solid rgba(255,255,255,.18)",
-      padding:"10px 12px",
-      borderRadius:"12px",
-      color:"#fff",
-      zIndex:"99",
-      opacity:"0",
-      transition:"opacity .15s ease",
-      maxWidth:"min(560px, 92vw)",
-      textAlign:"center",
-      fontFamily:"system-ui, Arial"
-    });
-  }
-  el.textContent = text;
-  el.style.opacity = "1";
-  clearTimeout(el._t);
-  el._t = setTimeout(() => el.style.opacity = "0", 2200);
 }
 
 /* =========================
@@ -385,3 +274,4 @@ function boot() {
 }
 
 boot();
+
