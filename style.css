@@ -1,350 +1,134 @@
-/* =========================
-   VARIABLES
-========================= */
-:root{
-  --bg-dark:#0f1220;
-  --panel:#12162a;
-  --stroke:#2a3156;
-  --gold:#FFD54A;
+import pygame
+import os
+from button import Button
 
-  --ok:#2da44e;
-  --danger:#8b2d2d;
-}
 
-/* =========================
-   RESET
-========================= */
-*{
-  box-sizing:border-box;
-  -webkit-tap-highlight-color: transparent;
-}
+star = pygame.transform.scale(pygame.image.load(os.path.join("Game/Shop", "star.png")).convert_alpha(), (50, 50))
+star2 = pygame.transform.scale(pygame.image.load(os.path.join("Game/Shop", "star.png")).convert_alpha(), (20, 20))
 
-html, body{
-  margin:0;
-  padding:0;
-  width:100%;
-  height:100%;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial;
-  color:#fff;
-}
 
-/* =========================
-   FOND PRINCIPAL
-========================= */
-body{
-  background-color: var(--bg-dark);
+class VerticalButton(Button):
+    def __init__(self, x, y, img, name, cost):
+        self.name = name
+        self.img = img
+        self.x = x
+        self.y = y
+        self.width = self.img.get_width()
+        self.height = self.img.get_height()
+        self.cost = cost
 
-  background-image:
-    radial-gradient(circle at center,
-      rgba(0,0,0,.15) 0%,
-      rgba(0,0,0,.55) 70%
-    ),
-    url("./images/main/task_01kcvg1rb3fcevk5d7mnwta9g3_1766154402_img_0.webp");
 
-  background-position: center center, center center;
-  background-size: cover, cover;
-  background-repeat: no-repeat, no-repeat;
-  background-attachment: fixed, fixed;
+class Menu:
+    def __init__(self, tower, x, y, img, item_cost):
+        self.x = x
+        self.y = y
+        self.width = img.get_width()
+        self.height = img.get_height()
+        self.item_cost = item_cost
+        self.buttons = []
+        self.items = 0
+        self.bg = img
+        self.font = pygame.font.SysFont("comicsans", 25)
+        self.tower = tower
 
-  overflow:hidden;
-}
+    def add_btn(self, img, name):
+        """
+        adds buttons to menu
+        :param img: surface
+        :param name: str
+        :return: None
+        """
+        self.items += 1
+        self.buttons.append(Button(self, img, name))
 
-/* Mobile perf */
-@media (max-width: 768px){
-  body{ background-attachment: scroll, scroll; }
-}
+    def get_item_cost(self):
+        """
+        gets cost of upgrade to next level
+        :return: int
+        """
+        return self.item_cost[self.tower.level - 1]
 
-/* =========================
-   APP ROOT
-========================= */
-#app{
-  position:relative;
-  min-height:100vh;
-  display:grid;
-  place-items:center;
-  padding:16px;
-}
+    def draw(self, win):
+        """
+        draws btns and menu bg
+        :param win: surface
+        :return: None
+        """
+        win.blit(self.bg, (self.x - self.bg.get_width()/2, self.y-120))
+        for item in self.buttons:
+            item.draw(win)
+            win.blit(star, (item.x + item.width + 5, item.y-9))
+            text = self.font.render(str(self.item_cost[self.tower.level - 1]), 1, (255,255,255))
+            win.blit(text, (item.x + item.width + 30 - text.get_width()/2, item.y + star.get_height() -8))
 
-/* =========================
-   HOME MENU
-========================= */
-.home{
-  width:min(760px, 94vw);
-  height:min(520px, 78vh);
-  display:flex;
-  flex-direction:column;
-  justify-content:space-between;
-  padding:12px;
-}
+    def get_clicked(self, X, Y):
+        """
+        return the clicked item from the menu
+        :param X: int
+        :param Y: int
+        :return: str
+        """
+        for btn in self.buttons:
+            if btn.clicked(X, Y):
+                return btn.name
 
-/* =========================
-   TOP BAR
-========================= */
-.topbar{
-  display:grid;                 /* logo centré + bouton à droite */
-  grid-template-columns: 1fr auto;
-  align-items:center;
-}
+        return None
 
-/* =========================
-   LOGO (TEXTE SEUL, SANS CADRE)
-========================= */
-.logo{
-  justify-self:center;
-  text-align:center;
+    def update(self):
+        """
+        update menu and button location
+        :return: None
+        """
+        for btn in self.buttons:
+            btn.update()
 
-  padding:0;
-  margin:0;
 
-  background:none !important;
-  border:none !important;
-  box-shadow:none !important;
-  backdrop-filter:none !important;
-  border-radius:0 !important;
-}
+class VerticalMenu(Menu):
+    """
+    Vertical Menu for side bar of game
+    """
+    def __init__(self, x, y, img):
+        self.x = x
+        self.y = y
+        self.width = img.get_width()
+        self.height = img.get_height()
+        self.buttons = []
+        self.items = 0
+        self.bg = img
+        self.font = pygame.font.SysFont("comicsans", 25)
 
-.logo-top{
-  font-size:44px;
-  font-weight:900;
-  letter-spacing:1px;
-  color:var(--gold);
-  text-shadow:
-    0 4px 0 rgba(0,0,0,.45),
-    0 10px 25px rgba(0,0,0,.45);
-  line-height:1;
-}
+    def add_btn(self, img, name, cost):
+        """
+        adds buttons to menu
+        :param img: surface
+        :param name: str
+        :return: None
+        """
+        self.items += 1
+        btn_x = self.x - 40
+        btn_y = self.y-100 + (self.items-1) * 120
+        self.buttons.append(VerticalButton(btn_x, btn_y, img, name, cost))
 
-.logo-bottom{
-  font-size:34px;
-  font-weight:900;
-  letter-spacing:3px;
-  color:#fff;
-  opacity:.95;
-}
+    def get_item_cost(self, name):
+        """
+        Gets cost of item
+        :param name: str
+        :return: int
+        """
+        for btn in self.buttons:
+            if btn.name == name:
+                return btn.cost
+        return -1
 
-/* =========================
-   ICON BUTTON (⚙️ SANS CADRE)
-   -> pas de fond, pas de bordure, pas d'ombre
-========================= */
-.iconBtn{
-  width:54px;
-  height:54px;
-  border:none !important;
-  background:transparent !important;
-  box-shadow:none !important;
-  backdrop-filter:none !important;
-
-  color:#fff;
-  font-size:26px;
-  cursor:pointer;
-  padding:0;
-  margin:0;
-
-  display:grid;
-  place-items:center;
-}
-
-/* =========================
-   CENTER (EYE)
-========================= */
-.center{
-  flex:1;
-  display:grid;
-  place-items:center;
-}
-
-.eyeBtn{
-  border:none;
-  background:transparent;
-  cursor:pointer;
-  padding:0;
-  transition: transform .12s ease;
-  filter: drop-shadow(0 22px 40px rgba(0,0,0,.30));
-}
-
-.eyeBtn:hover{ transform: translateY(-4px) scale(1.03); }
-.eyeBtn:active{ transform: translateY(-1px) scale(0.99); }
-
-.eyeWrap{
-  position:relative;
-  width:260px;
-  height:220px;
-  pointer-events:none;
-}
-
-.eyeBase{
-  width:100%;
-  height:100%;
-  object-fit:contain;
-  display:block;
-}
-
-/* =========================
-   IRIS
-========================= */
-.eyeIris{
-  position:absolute;
-  width:26px;
-  height:26px;
-  border-radius:999px;
-
-  background:
-    radial-gradient(circle at 35% 35%, rgba(255,255,255,.25) 0 26%, transparent 27%),
-    radial-gradient(circle at 62% 62%, rgba(0,0,0,.18) 0 52%, transparent 53%),
-    rgba(50,35,22,.55);
-
-  box-shadow:
-    inset 0 6px 10px rgba(0,0,0,.25),
-    0 2px 6px rgba(0,0,0,.18);
-
-  left:50%;
-  top:56%;
-  transform: translate(-50%,-50%);
-  filter: blur(.35px);
-  mix-blend-mode: multiply;
-}
-
-/* Blink */
-.eyeWrap.blink{
-  animation: blinkAnim 140ms ease-in-out;
-}
-@keyframes blinkAnim{
-  0%{ transform: scaleY(1); }
-  50%{ transform: scaleY(0.08); }
-  100%{ transform: scaleY(1); }
-}
-
-/* =========================
-   SETTINGS MODAL (SANS CADRES)
-   -> fenêtre interne simple, sans bordure, sans ombre, sans fond "carte"
-========================= */
-.modal-backdrop{
-  position:fixed;
-  inset:0;
-  background: rgba(0,0,0,.45);
-  z-index:9998;
-}
-
-.modal{
-  position:fixed;
-  top:84px;
-  right:18px;
-  width:min(320px, calc(100vw - 24px));
-
-  background: rgba(0,0,0,.35);     /* léger voile */
-  border:none !important;
-  box-shadow:none !important;
-  backdrop-filter: blur(6px);
-
-  border-radius:14px;
-  z-index:9999;
-  padding:12px;
-}
-
-.modal h3{
-  margin:0 0 10px;
-  font-size:14px;
-  letter-spacing:.4px;
-}
-
-/* lignes paramètres sans "cadres" */
-.modal-row{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-
-  padding:10px 0;
-  margin:0;
-  background:transparent !important;
-  border:none !important;
-}
-
-/* switch propre */
-.switch{
-  appearance:none;
-  width:44px;
-  height:26px;
-  border-radius:999px;
-  background: rgba(255,255,255,.18);
-  position:relative;
-  outline:none;
-  cursor:pointer;
-  border:none !important;
-}
-
-.switch::after{
-  content:"";
-  position:absolute;
-  top:3px;
-  left:3px;
-  width:18px;
-  height:18px;
-  border-radius:999px;
-  background:#fff;
-  transition: transform .16s ease;
-}
-
-.switch:checked{
-  background: rgba(45,164,78,.45);
-}
-
-.switch:checked::after{
-  transform: translateX(18px);
-}
-
-.modal-actions{
-  display:flex;
-  gap:10px;
-  justify-content:flex-end;
-  margin-top:6px;
-}
-
-/* boutons sans cadres */
-.modalBtn{
-  border:none !important;
-  background: transparent !important;
-  box-shadow:none !important;
-
-  color:#fff;
-  padding:10px 8px;
-  border-radius:10px;
-  cursor:pointer;
-  font-weight:900;
-  font-size:12px;
-  opacity:.95;
-}
-
-.modalBtn:hover{
-  opacity:1;
-  text-decoration: underline;
-}
-
-.modalBtn.danger{
-  color:#ffb3b3;
-}
-
-/* =========================
-   RESPONSIVE (petits écrans)
-========================= */
-@media (max-width: 900px){
-  .logo-top{ font-size:30px; }
-  .logo-bottom{ font-size:22px; letter-spacing:2px; }
-  .iconBtn{ width:44px; height:44px; font-size:22px; }
-  .modal{ top:64px; right:12px; }
-  .eyeWrap{
-    width:min(42vh, 260px);
-    height:min(36vh, 220px);
-  }
-  .eyeIris{ width:22px; height:22px; }
-}
-
-/* =========================
-   ACCESSIBILITÉ
-========================= */
-@media (prefers-reduced-motion: reduce){
-  *{
-    animation:none !important;
-    transition:none !important;
-  }
-}
+    def draw(self, win):
+        """
+        draws buttons and menu bg.
+        :param win: surface
+        :return: None
+        """
+        win.blit(self.bg, (self.x - self.bg.get_width()/2, self.y-120))
+        for item in self.buttons:
+            item.draw(win)
+            win.blit(star2, (item.x+2, item.y + item.height))
+            text = self.font.render(str(item.cost), 1, (255, 255, 255))
+            win.blit(text, (item.x + item.width/2 - text.get_width()/2 + 7, item.y + item.height + 5))
